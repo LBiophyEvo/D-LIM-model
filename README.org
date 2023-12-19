@@ -189,7 +189,7 @@ plt.tight_layout()
 plt.savefig(f"./img/{type_f}new_fit.svg", dpi=300, transparent=False)
 plt.show()
 #+end_src
-[[file:img/bionew_fit.png]]
+[[file:img/bionew_fit.svg]]
 
 
 
