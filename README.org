@@ -48,6 +48,27 @@ fit, var, lat = model(val_data[:, :-1].long(), detach=True)
 
 * Visualization of latent representation
 #+begin_src bash
+from scipy.stats import pearsonr 
+from numpy import mean, linspace 
+fig, (ax, bx, cx, dx) = plt.subplots(1, 4, figsize=(8, 2))
+ax.scatter(fit, val_data[:, [-1]].detach(), s=3, c="grey")
+x = linspace(min(fit), max(fit), num=100)
+y = linspace(min(fit), max(fit), num=100)
+ax.plot(x, y, lw=1.5, linestyle="--", c="orangered")
+ax.set_xlabel("$\\hat{F}$")
+ax.set_ylabel("$F^{obs}$")
+score = pearsonr(fit.flatten(), val_data[:, [-1]].flatten())[0]
+ax.text(fit.min(), fit.max(), f"$\\rho={score:.2f}$")
+
+model.plot(bx, data)
+
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+    cx.spines[el].set_visible(False)
+    dx.spines[el].set_visible(False)
+ax.set_aspect(1)
+
 fit_a, var_a, lat_a = model(data[:, :-1].long(), detach=True)
 cx.scatter(lat_a[:, 0], data[:, -1], s=5, c="grey")
 dx.scatter(lat_a[:, 1], data[:, -1], s=5, c="grey")
@@ -55,11 +76,14 @@ cx.set_ylabel("F")
 dx.set_xlabel("$Z^1$")
 cx.set_xlabel("$Z^2$")
 plt.tight_layout()
+plt.savefig("img/fit_e2.png", dpi=300, transparent=False)
 plt.show()
  #+end_src 
 
 Then we can get figure alike: 
  [[file:img/fit_e2.png]]
+
+
 
 
 
