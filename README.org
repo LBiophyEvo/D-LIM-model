@@ -1,4 +1,4 @@
-#+ TITLE: One parameter-genotype model design for genotype-fitness maps (D-LIM)
+#+TITLE: One parameter-genotype model design for genotype-fitness maps (D-LIM)
 * Setup
 You can easily install the package into your conda environment by using pip
  #+begin_src bash
@@ -83,6 +83,113 @@ plt.show()
 Then we can get figure alike: 
  [[file:img/fit_e2.png]]
 
+* Extrapolation based on latent variables 
+
+#+begin_src sh
+from torch import tensor, cat
+from src.model import DLIM
+from src.utils import Data_model, train
+from src.sim_data import Simulated
+from numpy import mean
+from numpy.random import choice, shuffle, sample
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from scipy.stats import pearsonr, spearmanr
+import matplotlib.patches as mpatches
+
+# choose the landscape: bio, add, quad, saddle, hat, exp 
+type_f = "bio"
+nb_state = 36
+data = Simulated(nb_state, type_f)
+
+model = DLIM(2, nb_state=nb_state, hid=32, nb_layer=1)
+
+thres = 1.2
+# choose the data for training 
+A_id = [i for i, el  in enumerate(data.A) if el >= 1.2]
+B_id = [i for i, el  in enumerate(data.B) if el >= 1.2]
+nA_id = [i for i, el  in enumerate(data.A) if i not in A_id]
+nB_id = [i for i, el  in enumerate(data.B) if i not in B_id]
+train_id = [i for i, el  in enumerate(data.data) if el[0] in A_id and el[1] in B_id]
+len(train_id)
+train_data = data[train_id, :]
+val_id = [i for i in range(data.data.shape[0]) if i not in train_id]
+val_data = data[val_id, :]
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=300, bsize=64, wei_dec=1e-3, val_data=val_data)
+train_l, val_l = zip(*losses)
+
+
+fit_v, vari_v, lat_v = model(val_data[:, :-1].long(), detach=True)
+fit_t, var_t, lat_t = model(train_data[:, :-1].long(), detach=True)
+#+end_src
+
+*** get the landscape of data 
+#+begin_src sh
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+data.plot(ax)
+ax.scatter(data.A[data.data[train_id, 0].long()], data.B[data.data[train_id, 1].long()], s=2, marker="o", c="black")
+ax.scatter(data.A[data.data[val_id, 0].long()], data.B[data.data[val_id, 1].long()], s=2, marker="o", c="white")
+
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}_land_data.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+[[file:img/bio_land_data.png]]
+
+
+*** Extrapolation on unseen data 
+#+begin_src sh
+model.train_convert(A_id, data.A[A_id], 0)
+model.train_convert(B_id, data.B[B_id], 1)
+model.update_emb(nA_id, data.A[nA_id], 0)
+model.update_emb(nB_id, data.B[nB_id], 1)
+
+fig, (ax, bx) = plt.subplots(1, 2, figsize=(5, 2.5))
+ax.scatter(model.genes[0][A_id].detach(), data.A[A_id], c="black", s=20)
+ax.scatter(model.genes[0][nA_id].detach(), data.A[nA_id], c="orange", s=20)
+ax.plot(np.polyval(model.conversion[0], np.linspace(0, 5, 100)), np.linspace(0, 5, 100), linewidth=1, linestyle="--", c="grey")
+bx.scatter(model.genes[1][B_id].detach(), data.B[B_id], c="black", s=20)
+bx.scatter(model.genes[1][nB_id].detach(), data.B[nB_id], c="orange", s=20)
+bx.plot(np.polyval(model.conversion[1], np.linspace(0, 5, 100)), np.linspace(0, 5, 100), linewidth=1, linestyle="--", c="grey")
+ax.set_ylabel("$X$")
+ax.set_xlabel("$Z^1$")
+bx.set_ylabel("$Y$")
+bx.set_xlabel("$Z^2$")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}_cor_bio.png", dpi=300, transparent=False)
+plt.show()
+#+end_src
+[[file:img/bio_cor_bio.png]]
+
+#+begin_src sh
+fit_n, var_n, lat_n = model(val_data[:, :-1].long(), detach=True)
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+score = ((fit_n.flatten() - val_data[:, [-1]].flatten())**2).mean()
+score_v = ((fit_v.flatten() - val_data[:, [-1]].flatten())**2).mean()
+
+ax.scatter(fit_n, val_data[:, [-1]], s=2, c="grey", label=f"MSE$={score:.2f}$")
+ax.scatter(fit_v, val_data[:, [-1]], s=2, c="C0", label=f"MSE$={score_v:.2f}$")
+
+ax.set_xlabel("$\\hat{F}$")
+ax.set_ylabel("$F^{obs}$")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.legend(frameon=False, ncol=1, fontsize=9)
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}new_fit.svg", dpi=300, transparent=False)
+plt.show()
+#+end_src
+[[file:img/bionew_fit.png]]
 
 
 
