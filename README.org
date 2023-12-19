@@ -1,9 +1,89 @@
-# D-LIM model
-## Setup
+#+ TITLE: One parameter-genotype model design for genotype-fitness maps (D-LIM)
+* Setup
 You can easily install the package into your conda environment by using pip
  #+begin_src bash
 # add pip packages later on 
  #+end_src 
 
-## 
-![The main idea of modeling](https://github.com/LBiophyEvo/D-LIM-model/blob/master/fig/fig_1.svg)
+* Pipeline  
+The outputs of the pipeline are in the following:
+1. Load data (data format should be alike the data provided in the code)
+2. Train model and prediction 
+3. Analysis of the latent representations (downstream analysis of D-LIM)
+
+* Data preparation
+Data should be alike: 
+| T1A | T1A | 0.069084583 |
+|-----|-----|-------------|
+| T1A | T1C | 0.059979105 |
+| T1A | T1G | 0.067210986 |
+| T1A | T2A | 0.063013785 |
+| T1A | T2C | 0.086052725 |
+| T1A | T2G | 0.070804922 |
+The first few columns should be the mutants in genes, then the last column is for fitness. 
+
+To load the data: 
+ #+begin_src bash
+file_name = "data/data_epis_1.csv"
+nb_gene = 2 
+data = Data_model(file_name, nb_gene)
+ #+end_src 
+
+* Train the model 
+ #+begin_src bash
+from numpy.random import choice 
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.2))
+train_data = data[train_id, :]
+val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+model = DLIM(nb_gene, nb_state=37, hid=16, nb_layer=0)
+losses = train(model, train_data, lr=1e-2, nb_epoch=500, bsize=16, val_data=val_data, wei_dec=1e-2)
+ #+end_src 
+
+* Prediction 
+#+begin_src bash
+fit, var, lat = model(val_data[:, :-1].long(), detach=True)
+ #+end_src 
+- It allows you to predict the fitness of genotypes and its variance. 
+- each column of lat corresponds to the latent representations of each gene.
+
+* Visualization of latent representation
+#+begin_src bash
+from scipy.stats import pearsonr 
+from numpy import mean, linspace 
+fig, (ax, bx, cx, dx) = plt.subplots(1, 4, figsize=(8, 2))
+ax.scatter(fit, val_data[:, [-1]].detach(), s=3, c="grey")
+x = linspace(min(fit), max(fit), num=100)
+y = linspace(min(fit), max(fit), num=100)
+ax.plot(x, y, lw=1.5, linestyle="--", c="orangered")
+ax.set_xlabel("$\\hat{F}$")
+ax.set_ylabel("$F^{obs}$")
+score = pearsonr(fit.flatten(), val_data[:, [-1]].flatten())[0]
+ax.text(fit.min(), fit.max(), f"$\\rho={score:.2f}$")
+
+model.plot(bx, data)
+
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+    cx.spines[el].set_visible(False)
+    dx.spines[el].set_visible(False)
+ax.set_aspect(1)
+
+fit_a, var_a, lat_a = model(data[:, :-1].long(), detach=True)
+cx.scatter(lat_a[:, 0], data[:, -1], s=5, c="grey")
+dx.scatter(lat_a[:, 1], data[:, -1], s=5, c="grey")
+cx.set_ylabel("F")
+dx.set_xlabel("$Z^1$")
+cx.set_xlabel("$Z^2$")
+plt.tight_layout()
+plt.savefig("img/fit_e2.png", dpi=300, transparent=False)
+plt.show()
+ #+end_src 
+
+Then we can get figure alike: 
+ [[file:img/fit_e2.png]]
+
+
+
+
+
