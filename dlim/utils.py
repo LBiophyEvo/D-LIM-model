@@ -104,7 +104,7 @@ def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32,
         for bi, batch in enumerate(loader):
             optimizer.zero_grad()
             # use the simple loss
-            pfit, var, lat = model(batch[:, :-1].long())
+            pfit, var, lat = model(batch[:, :-1].int())
             loss_mse = loss_f(pfit, batch[:, [-1]], var)
             if const is not None:
                 loss_dist = dist_loss(model.genes, const, wei_const)
@@ -118,7 +118,7 @@ def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32,
         if val_data is not None:
             with no_grad():
                 model.eval()
-                pfit_, var_, lat = model(val_data[:, :-1].long())
+                pfit_, var_, lat = model(val_data[:, :-1].int())
                 loss_mse_v = loss_f(pfit_, val_data[:, [-1]], var_)
                 model.train()
             losses += [(mean(loss_b), loss_mse_v)]
@@ -151,7 +151,7 @@ def train_reg(model, data, lr=1e-3, nb_epoch=100, bsize=32, wei_dec=1e-3, val_da
         for bi, batch in enumerate(loader):
             optimizer.zero_grad()
             # use the simple loss
-            pfit = model(batch[:, :-1].long())
+            pfit = model(batch[:, :-1].int())
             loss_mse = ((pfit - batch[:, [-1]])**2).mean()
 
             loss = loss_mse
@@ -161,7 +161,7 @@ def train_reg(model, data, lr=1e-3, nb_epoch=100, bsize=32, wei_dec=1e-3, val_da
             loss_d += [0]
         if val_data is not None:
             with no_grad():
-                pfit = model(val_data[:, :-1].long())
+                pfit = model(val_data[:, :-1].int())
                 loss_mse_v = ((pfit - val_data[:, [-1]])**2).mean()
             losses += [(mean(loss_b), loss_mse_v)]
         else:
