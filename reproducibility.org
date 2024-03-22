@@ -48,8 +48,8 @@ plt.show()
 ** test case
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from numpy import mean, linspace
 from numpy.random import choice
 from sklearn.metrics import r2_score
@@ -120,9 +120,9 @@ plt.show()
 *** Are the constraints useful
 
 #+begin_src python
-from src.model import DLIM
+from dlim import DLIM
 from src.sim_data import Simulated
-from src.utils import Data_model, train
+from dlim.utils import Data_model, train
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import r2_score
 from numpy import mean, logspace, std
@@ -194,8 +194,8 @@ plt.show()
 ** How many data points to train the model
 
 #+begin_src python
-from src.model import DLIM, Regression, Add_Latent
-from src.utils import Data_model, train, train_reg
+from dlim import DLIM, Regression, Add_Latent
+from dlim.utils import Data_model, train, train_reg
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 from numpy import mean, logspace, std
@@ -275,8 +275,8 @@ plt.show()
 ** How does it handle the noise
 
 #+begin_src python
-from src.model import DLIM, Regression, Add_Latent
-from src.utils import Data_model, train, train_reg
+from dlim import DLIM, Regression, Add_Latent
+from dlim.utils import Data_model, train, train_reg
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 from numpy import mean, logspace, std
@@ -355,8 +355,8 @@ plt.show()
 #+RESULTS:
 
 #+begin_src python
-from src.model import DLIM, Regression
-from src.utils import Data_model, train, train_reg
+from dlim import DLIM, Regression
+from dlim.utils import Data_model, train, train_reg
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 from numpy import mean, logspace, std
@@ -425,8 +425,8 @@ plt.show()
 ** test case
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from src.sim_data import Simulated
 from numpy import mean
 from numpy.random import choice, shuffle
@@ -544,8 +544,8 @@ plt.show()
 ** Compare distances
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from src.sim_data import Simulated
 from numpy import mean, var
 from numpy.random import choice
@@ -649,8 +649,8 @@ with open("./data/data_const.dat", "w") as out:
 ** test case
 
 #+begin_src python :results output
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 from numpy import mean
@@ -689,8 +689,8 @@ plt.show()
 ** benchmark with and without
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 from numpy import mean, logspace, std
@@ -791,8 +791,8 @@ with open("data/rand_seq_paired.dat", "w") as out:
 ** Model
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from numpy import mean, linspace, array, meshgrid
 from numpy.random import choice
 import numpy as np
@@ -843,8 +843,8 @@ plt.show()
 ** Model with pairs
 
 #+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from numpy import mean, linspace, array, meshgrid
 from numpy.random import choice
 import numpy as np
@@ -904,8 +904,8 @@ plt.show()
 
 #+begin_src python
 from torch import tensor, cat
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from src.sim_data import Simulated
 from numpy import mean
 from numpy.random import choice, shuffle, sample
@@ -1027,8 +1027,8 @@ plt.show()
 
 #+begin_src python :results output
 from torch import tensor, cat
-from src.model import DLIM
-from src.utils import Data_model, train
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from src.sim_data import Simulated
 from numpy import mean
 from numpy.random import choice, shuffle, sample

@@ -13,14 +13,25 @@ low-data biological research.
 The implementation has been tested on a Linux system for: Python 3.10.9; Pytorch
 2.0.1; numpy 1.23.5; pandas 2.0.2.
 
+* Installation
+
+Install the package from Pypi:
+#+begin_src bash
+pip install dlim
+#+end_src
+
+Or install it from the sources:
+#+begin_src bash
+pip install .
+#+end_src
 
 * Usage
 
 The code snippet bellow shows how to use fit D-LIM for fitness prediction.
 
-#+begin_src python
-from src.model import DLIM
-from src.utils import Data_model, train
+#+begin_src python :results output
+from dlim import DLIM
+from dlim.utils import Data_model, train
 from numpy import mean, linspace
 from numpy.random import choice
 from sklearn.metrics import r2_score
@@ -39,9 +50,9 @@ train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.2))
 train_data = data[train_id, :]
 val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
 
-# We train the model with a learning rate of 1e-2 for 500 steps with batch size
+# We train the model with a learning rate of 1e-2 for 300 steps with batch size
 # 16 and regularization of 1e-2
-losses = train(model, train_data, lr=1e-2, nb_epoch=500, bsize=16, val_data=val_data, wei_dec=1e-2)
+losses = train(model, train_data, lr=1e-2, nb_epoch=300, bsize=16, val_data=val_data, wei_dec=1e-2)
 
 # Now, we compute the validation prediction
 fit, var, _ = model(val_data[:, :-1].int(), detach=True)
@@ -53,6 +64,9 @@ fig, ax = plt.subplots(figsize=(2, 2))
 model.plot(ax, data)
 plt.show()
 #+end_src
+
+#+RESULTS:
+: None
 
 * Reproduction of the manuscript
 

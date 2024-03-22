@@ -27,9 +27,10 @@ setup(
         "numpy",
     ],
     # Other metadata
-    author='Vaitea Opuu',
+    author='Shuhui Wang, Alexandre Allauzen, Philippe Nghe, Vaitea Opuu',
     author_email='vaiteaopuu@gmail.com',
     description='Model genotype to fitness map',
-    long_description=__doc__,
-    # url='https://github.com/yourusername/your_package',
+    long_description=open('README.org').read(),
+    license="MIT",
+    url="https://github.com/LBiophyEvo/D-LIM-model"
 )
