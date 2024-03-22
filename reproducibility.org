@@ -1,0 +1,1106 @@
+* Get the dataset from Kemble
+** Fitness values
+
+#+begin_src python
+with open("./data/data_env_1.csv", "w") as out:
+    for l in open("./data/dataset5_flux.csv"):
+        val = l.strip().split(",")
+        mut_1, mut_2 = val[0].split(".")
+        all_val = [mut_1, mut_2] + [val[1]]
+        out.write(",".join(all_val)+"\n")
+#+end_src
+
+** Epistatic values
+
+#+begin_src python
+import matplotlib.pyplot as plt
+
+fit_l, epis_l = [], []
+with open("./data/data_epis_3.csv", "w") as out:
+    fitness = {}
+    for l in open("./data/dataset5_flux.csv"):
+        val = l.strip().split(",")
+        mut_1, mut_2 = val[0].split(".")
+        try:
+            fitness[(mut_1, mut_2)] = float(val[3])
+        except:
+            ""
+    for (mut_1, mut_2), fit in fitness.items():
+        if "WT" not in [mut_1, mut_2]:
+            try:
+                sm2 = fitness[("WT", mut_2)]
+                sm1 = fitness[(mut_1, "WT")]
+                vfit = fit - (sm1 + sm2)
+                fit_l += [sm1 + sm2]
+                epis_l += [fit]
+                out.write(f"{mut_1},{mut_2},{vfit}\n")
+            except:
+                "one missing"
+
+plt.scatter(fit_l, epis_l)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+* Kemble dataset
+** test case
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from numpy import mean, linspace
+from numpy.random import choice
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
+
+data = Data_model("./data/data_env_1.csv", 2)
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.2))
+model = DLIM(2, nb_state=37, hid=16, nb_layer=0)
+
+train_data = data[train_id, :]
+val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=500, bsize=16, val_data=val_data, wei_dec=1e-2)
+train_l, val_l = zip(*losses)
+plt.plot(train_l)
+plt.plot(val_l)
+plt.show()
+
+fit, var, _ = model(val_data[:, :-1].int(), detach=True)
+
+fig, (ax, bx, cx, dx) = plt.subplots(1, 4, figsize=(8, 2))
+ax.scatter(fit, val_data[:, [-1]].detach(), s=3, c="grey")
+x = linspace(min(fit), max(fit), num=100)
+y = linspace(min(fit), max(fit), num=100)
+ax.plot(x, y, lw=1.5, linestyle="--", c="orangered")
+ax.set_xlabel("$\\hat{F}$")
+ax.set_ylabel("$F^{obs}$")
+# score = r2_score(fit.flatten(), val_data[:, [-1]].flatten())
+score = pearsonr(fit.flatten(), val_data[:, [-1]].flatten())[0]
+ax.text(fit.min(), fit.max(), f"$\\rho={score:.2f}$")
+
+model.plot(bx, data)
+
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+    cx.spines[el].set_visible(False)
+    dx.spines[el].set_visible(False)
+ax.set_aspect(1)
+# bx.set_aspect(1)
+
+# Plot the a00verage curve
+fit_a, var_a, lat_a = model(data[:, :-1].int(), detach=True)
+cx.scatter(lat_a[:, 0], data[:, -1], s=5, c="grey")
+dx.scatter(lat_a[:, 1], data[:, -1], s=5, c="grey")
+cx.set_ylabel("F")
+dx.set_xlabel("$Z^1$")
+cx.set_xlabel("$Z^2$")
+plt.tight_layout()
+# plt.savefig("./img/fit_e2.png", dpi=300, transparent=True)
+plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2, 2), sharey=True)
+ax.scatter(var_a.log(), data[:, [-1]], s=3, c="grey")
+ax.set_xlabel("$\\hat{\\sigma}$")
+ax.set_ylabel("$F^{obs}$")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+# plt.savefig("../img/fit_var_e2.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+*** Are the constraints useful
+
+#+begin_src python
+from src.model import DLIM
+from src.sim_data import Simulated
+from src.utils import Data_model, train
+from scipy.stats import pearsonr, spearmanr
+from sklearn.metrics import r2_score
+from numpy import mean, logspace, std
+from numpy.random import choice, seed
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+
+data = Data_model("./data/data_env_1.csv", 2)
+val_frac = logspace(0.1, 0.5, num=4)
+nb_var = 37
+val_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.1))
+train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
+train_full_data = data[train_full_id, :]
+val_data = data[val_id, :]
+
+def run_one(args):
+    i, frac = args
+    seed(42 + i)
+    train_id = choice(range(train_full_data.shape[0]), int(train_full_data.shape[0]*frac))
+    model = DLIM(2, nb_state=nb_var, hid=32, nb_layer=0, sin_act=True, spec_norm=True)
+    model_no = DLIM(2, nb_state=nb_var, hid=32, nb_layer=0, spec_norm=False, sin_act=False)
+    train_data = train_full_data[train_id, :]
+
+    _ = train(model, train_data, lr=1e-3, wei_dec=1e-4, nb_epoch=300)
+    _ = train(model_no, train_data, lr=1e-3, wei_dec=1e-4, nb_epoch=300)
+
+    fit = model(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_no = model_no(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    cor_w = spearmanr(fit, val_data[:, -1])[0]
+    cor_n = spearmanr(fit_no, val_data[:, -1])[0]
+    # cor_w = r2_score(fit, val_data[:, [-1]])
+    # cor_n = r2_score(fit_no, val_data[:, [-1]])
+
+    # cor_w = 0.5 * (spearmanr(model.genes[0].detach(), data.A)[0] + spearmanr(model.genes[1].detach(), data.B)[0])
+    # cor_n = 0.5 * (spearmanr(model_no.genes[0].detach(), data.A)[0] + spearmanr(model_no.genes[1].detach(), data.B)[0])
+    return cor_w, cor_n
+
+res_w, res_n = [], []
+pool = Pool(20)
+for frac in val_frac:
+    res = pool.map(run_one, [(i, frac) for i in range(1)])
+    tmp_w, tmp_n = zip(*res)
+    res_w += [tmp_w]
+    res_n += [tmp_n]
+
+fig, ax = plt.subplots(figsize=(2.5, 2.5))
+val_frac = val_frac * data.data.shape[0]
+color1 = '#ffa500'  # modern orange
+color2 = '#607d8b'  # light gray-blue
+ax.plot(val_frac, [mean(el) for el in res_w], c=color1, lw=2, label="with reg")
+ax.plot(val_frac + val_frac*0.01, [mean(el) for el in res_n], c=color2, lw=2, label="no reg")
+ax.scatter(val_frac, [mean(el) for el in res_w], c=color1, s=15)
+ax.scatter(val_frac + val_frac*0.01, [mean(el) for el in res_n], c=color2, s=15)
+ax.errorbar(val_frac, [mean(el) for el in res_w], yerr=[std(el) for el in res_w], c=color1)
+ax.errorbar(val_frac + val_frac*0.01, [mean(el) for el in res_n], yerr=[std(el) for el in res_n], c=color2)
+ax.set_xscale("log")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.set_ylabel("$R^2$")
+ax.set_xlabel("nb. data points")
+ax.legend(frameon=False)
+plt.tight_layout()
+# plt.savefig("img/latent_reg.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+** How many data points to train the model
+
+#+begin_src python
+from src.model import DLIM, Regression, Add_Latent
+from src.utils import Data_model, train, train_reg
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean, logspace, std
+from numpy.random import choice, seed
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+from src.sim_data import Simulated
+
+data = Data_model("./data/data_epis_1.csv", 2)
+# data = Simulated(50, "bio")
+val_frac = logspace(-1, 0.1, num=7)
+val_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.3))
+train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
+train_full_data = data[train_full_id, :]
+val_data = data[val_id, :]
+
+def run_one(args):
+    i, frac = args
+    seed(42 + i)
+    train_id = choice(range(train_full_data.shape[0]), int(train_full_data.shape[0]*frac))
+    model = DLIM(2, nb_state=50, hid=16, nb_layer=0)
+    model_add = Add_Latent(2, nb_state=50, hid=16, nb_layer=0, emb=2)
+    model_reg = Regression(2, nb_state=37)
+
+    train_data = train_full_data[train_id, :]
+
+    _ = train(model, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train(model_add, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train_reg(model_reg, train_data, lr=1e-2, nb_epoch=300, bsize=64)
+
+    fit = model(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_add = model_add(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_reg = model_reg(val_data[:, :-1].int()).detach().squeeze(-1)
+    cor_w = pearsonr(fit, val_data[:, -1])[0]
+    cor_a = pearsonr(fit_add, val_data[:, -1])[0]
+    cor_r = pearsonr(fit_reg, val_data[:, -1])[0]
+    # cor_w = r2_score(fit, val_data[:, [-1]])
+    return cor_w, cor_a, cor_r
+
+res_w, res_a, res_c = [], [], []
+pool = Pool(20)
+for frac in val_frac:
+    tmp_w = pool.map(run_one, [(i, frac) for i in range(10)])
+    res_w += [[w for w, _, _ in tmp_w]]
+    res_a += [[a for _, a, _ in tmp_w]]
+    res_c += [[c for _, _, c in tmp_w]]
+
+fig, ax = plt.subplots(figsize=(2.5, 2.5))
+color1 = '#ffa500'  # modern orange
+color2 = '#607d8b'  # light gray-blue
+color3 = 'C2'  # light gray-blue
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_w], c=color1, lw=2, label="D-LIM")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_w], c=color1, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_w], yerr=[std(el) for el in res_w], c=color1)
+
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_a], c=color3, lw=2, label="Add")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_a], c=color3, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_a], yerr=[std(el) for el in res_a], c=color2)
+
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_c], c=color2, lw=2, label="Regression")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_c], c=color2, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_c], yerr=[std(el) for el in res_c], c=color2)
+
+ax.set_xscale("log")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.set_ylabel("$\\rho$")
+ax.set_xlabel("nb. data points")
+ax.legend(frameon=False)
+plt.tight_layout()
+# plt.savefig("../img/reg_dlim_comp.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+** How does it handle the noise
+
+#+begin_src python
+from src.model import DLIM, Regression, Add_Latent
+from src.utils import Data_model, train, train_reg
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean, logspace, std
+from numpy.random import choice, seed, normal
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+from src.sim_data import Simulated
+
+data = Data_model("./data/data_epis_1.csv", 2)
+# data = Simulated(50, "bio")
+val_frac = logspace(-1, 0, num=7)
+val_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.3))
+train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
+train_full_data = data[train_full_id, :]
+val_data = data[val_id, :]
+
+def run_one(args):
+    i, frac = args
+    seed(42 + i)
+    train_id = choice(range(train_full_data.shape[0]), int(train_full_data.shape[0]*frac))
+    model = DLIM(2, nb_state=50, hid=16, nb_layer=0)
+    model_add = Add_Latent(2, nb_state=50, hid=16, nb_layer=0, emb=2)
+    model_reg = Regression(2, nb_state=37)
+
+    train_data = train_full_data.clone()
+    train_data[:, -1] +=  normal(0, 1, train_full_data[:, :-1].shape[0]) * frac
+
+    _ = train(model, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train(model_add, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train_reg(model_reg, train_data, lr=1e-2, nb_epoch=300, bsize=64)
+
+    fit = model(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_add = model_add(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_reg = model_reg(val_data[:, :-1].int()).detach().squeeze(-1)
+    cor_w = pearsonr(fit, val_data[:, -1])[0]
+    cor_a = pearsonr(fit_add, val_data[:, -1])[0]
+    cor_r = pearsonr(fit_reg, val_data[:, -1])[0]
+    # cor_w = r2_score(fit, val_data[:, [-1]])
+    return cor_w, cor_a, cor_r
+
+res_w, res_a, res_c = [], [], []
+pool = Pool(20)
+for frac in val_frac:
+    tmp_w = pool.map(run_one, [(i, frac) for i in range(10)])
+    res_w += [[w for w, _, _ in tmp_w]]
+    res_a += [[a for _, a, _ in tmp_w]]
+    res_c += [[c for _, _, c in tmp_w]]
+
+fig, ax = plt.subplots(figsize=(2.5, 2.5))
+color1 = '#ffa500'  # modern orange
+color2 = '#607d8b'  # light gray-blue
+color3 = 'C2'  # light gray-blue
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_w], c=color1, lw=2, label="D-LIM")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_w], c=color1, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_w], yerr=[std(el) for el in res_w], c=color1)
+
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_a], c=color3, lw=2, label="Add")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_a], c=color3, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_a], yerr=[std(el) for el in res_a], c=color2)
+
+ax.plot(val_frac* data.data.shape[0], [mean(el) for el in res_c], c=color2, lw=2, label="Regression")
+ax.scatter(val_frac* data.data.shape[0], [mean(el) for el in res_c], c=color2, s=15)
+ax.errorbar(val_frac* data.data.shape[0], [mean(el) for el in res_c], yerr=[std(el) for el in res_c], c=color2)
+
+ax.set_xscale("log")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.set_ylabel("$\\rho$")
+ax.set_xlabel("nb. data points")
+ax.legend(frameon=False)
+plt.tight_layout()
+# plt.savefig("../img/reg_dlim_comp.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+#+begin_src python
+from src.model import DLIM, Regression
+from src.utils import Data_model, train, train_reg
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean, logspace, std
+from numpy.random import choice, seed, normal
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+from src.sim_data import Simulated
+
+data = Data_model("./data/data_epis_1.csv", 2)
+# data = Simulated(50, "bio")
+val_frac = logspace(-1, 0, num=7)
+val_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.3))
+train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
+train_full_data = data[train_full_id, :]
+val_data = data[val_id, :]
+
+def run_one(args):
+    i, frac = args
+    seed(42 + i)
+    model = DLIM(2, nb_state=50, hid=16, nb_layer=0)
+    model_reg = Regression(2, nb_state=37)
+
+    train_data = train_full_data.clone()
+    train_data[:, -1] +=  normal(0, 1, train_full_data[:, :-1].shape[0]) * frac
+
+    _ = train(model, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train_reg(model_reg, train_data, lr=1e-2, nb_epoch=300, bsize=64)
+
+    fit = model(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_reg = model_reg(val_data[:, :-1].int()).detach().squeeze(-1)
+    cor_w = pearsonr(fit, val_data[:, -1])[0]
+    cor_r = pearsonr(fit_reg, val_data[:, -1])[0]
+    # cor_w = r2_score(fit, val_data[:, [-1]])
+    return cor_w, cor_r
+
+res_w, res_c = [], []
+pool = Pool(20)
+for frac in val_frac:
+    tmp_w = pool.map(run_one, [(i, frac) for i in range(5)])
+    res_w += [[w for w, _ in tmp_w]]
+    res_c += [[c for _, c in tmp_w]]
+
+fig, ax = plt.subplots(figsize=(2.5, 2.5))
+color1 = '#ffa500'  # modern orange
+color2 = '#607d8b'  # light gray-blue
+ax.plot(val_frac, [mean(el) for el in res_w], c=color1, lw=2, label="D-LIM")
+ax.scatter(val_frac, [mean(el) for el in res_w], c=color1, s=15)
+ax.errorbar(val_frac, [mean(el) for el in res_w], yerr=[std(el) for el in res_w], c=color1)
+
+ax.plot(val_frac, [mean(el) for el in res_c], c=color2, lw=2, label="Regression")
+ax.scatter(val_frac, [mean(el) for el in res_c], c=color2, s=15)
+ax.errorbar(val_frac, [mean(el) for el in res_c], yerr=[std(el) for el in res_c], c=color2)
+
+ax.set_xscale("log")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.set_ylabel("$\\rho$")
+ax.set_xlabel("nb. data points")
+ax.legend(frameon=False)
+plt.tight_layout()
+# plt.savefig("../img/reg_dlim_comp.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+* Simulated data
+** test case
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from src.sim_data import Simulated
+from numpy import mean
+from numpy.random import choice, shuffle
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr, spearmanr
+
+type_f = "comp"
+nb_var = 30
+data = Simulated(nb_var, type_f, comp=False)
+
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.5))
+model = DLIM(2, nb_state=nb_var, hid=32, nb_layer=1)
+
+train_data = data[train_id, :]
+val_id = [i for i in range(data.data.shape[0]) if i not in train_id]
+shuffle(val_id)
+val_data = data[val_id[:int(data.data.shape[0]*0.3)], :]
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=300, bsize=64, wei_dec=1e-3, val_data=val_data)
+train_l, val_l = zip(*losses)
+
+fit, var, lat = model(val_data[:, :-1].int(), detach=True)
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+ax.scatter(fit, val_data[:, [-1]])
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+score = r2_score(fit.flatten(), val_data[:, [-1]].flatten())
+ax.text(fit.min(), fit.max(), f"$\\rho={score:.2f}$")
+# plt.savefig(f"./img/{type_f}_val_synth.png", dpi=300, transparent=True)
+plt.show()
+
+fig, bx = plt.subplots(1, figsize=(2.5, 2.5))
+model.plot(bx)
+bx.scatter(model.genes[0][data.data[:, 0].int()].detach(),
+           model.genes[1][data.data[:, 1].int()].detach(),
+           c=data.data[:, -1], s=2, cmap="bwr", marker="x")
+for el in ["top", "right"]:
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"../img/{type_f}_land_synth.png", dpi=300, transparent=True)
+plt.show()
+
+# fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+# data.plot(ax)
+# ax.scatter(data.A[data.data[:, 0].int()], data.B[data.data[:, 1].int()], c="grey", s=2, cmap="bwr", marker="x")
+# for el in ["top", "right"]:
+#     ax.spines[el].set_visible(False)
+# plt.tight_layout()
+# plt.savefig(f"../img/{type_f}_land_real.png", dpi=300, transparent=True)
+# plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+score_A = spearmanr(model.genes[0].detach(), data.A)[0]
+score_B = spearmanr(model.genes[1].detach(), data.B)[0]
+ax.scatter(model.genes[0].detach(), data.A, c="C0", s=3)
+ax.scatter(model.genes[1].detach(), data.B, c="C1", s=3)
+ax.set_xlabel("$Z^1$ | $Z^2$")
+ax.set_ylabel("X | Y")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    # bx.spines[el].set_visible(False)
+ax.annotate(f"$\\rho={score_A:.1f}$", xy=(0.3, 0.93), xycoords="axes fraction", fontsize=12, c="C0")
+ax.annotate(f"$\\rho={score_B:.1f}$", xy=(0.3, 0.8), xycoords="axes fraction", fontsize=12, c="C1")
+plt.tight_layout()
+plt.savefig(f"../img/{type_f}_corz_synth.svg", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+** Simulated landscapes
+
+#+begin_src python
+from src.sim_data import Simulated
+from numpy import mean
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+
+x = linspace(0, 5, 100)
+x, y = meshgrid(x, x)
+
+z_add = x + y
+z_quad = x+ y -x * y
+z_saddle = np.exp(-(x**2 + y**2))*10
+z_sel = z_add
+type_f = "add"
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+# ax.axis("off")
+axf = ax.contourf(x, y, z_sel, cmap="bwr", alpha=0.8, levels=30)
+# ax.set_xticks([])
+# ax.set_yticks([])
+# ax.set_title("$X+Y - (X \\times Y)$")
+ax.set_title("$X+Y$")
+ax.set_ylabel("Y")
+ax.set_xlabel("X")
+
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+# fig.colorbar(surf, ax=bx)
+ax.set_aspect(1)
+plt.tight_layout()
+plt.savefig(f"..//img/sim_{type_f}_land.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+** Compare distances
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from src.sim_data import Simulated
+from numpy import mean, var
+from numpy.random import choice
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+
+tmp = []
+
+for cor in ["add", "comp"]:
+    model = DLIM(2, nb_state=30, hid=31, nb_layer=1)
+    data = Simulated(30, cor)
+    train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.7))
+
+    train_data = data[train_id, :]
+    val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+
+    # losses = train(model, train_data, nb_epoch=1000)
+    losses = train(model, train_data, lr=1e-2, nb_epoch=400, bsize=64, wei_dec=1e-3)
+    fit, var, lat = model(data[:, :-1].int(), detach=True)
+    differences = lat[:, np.newaxis, :] - lat[np.newaxis, :, :]
+    distances = np.linalg.norm(differences, axis=2)
+    tmp += [distances.flatten()]
+
+fig, bx = plt.subplots(figsize=(3, 2))
+for el in ["top", "right"]:
+    bx.spines[el].set_visible(False)
+bx.hist(tmp, density=True, histtype="step", label=["$X+Y$", "$X+Y - (X \\times Y)$"], bins=40)
+
+# for mtype, el in zip(["add", "quad", "saddle"], tmp):
+#     print(mtype, mean(el), var(el))
+
+bx.legend(frameon=False, fontsize=8)
+bx.set_xlabel("Pair distance", fontsize=10)
+bx.set_ylabel("Freq.", fontsize=10)
+plt.tight_layout()
+plt.savefig("../img/hist_pair_sim.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+* Integrating heterogeneous data sources
+** Get constraint file
+
+Create the constraint file from correlations observed in the data -> assuming
+that mutations having very similar effects should be close in the latent space.
+
+#+begin_src python
+import numpy as np
+from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
+
+fit_dic = {("WT", "WT"): 0}
+all_mut_1 = set()
+all_mut_2 = set()
+for l in open("./data/data_env_1.csv"):
+    mut_1, mut_2, fit = l.strip().split(",")
+    if fit == "":
+        fit = 0
+    fit_dic[(mut_1, mut_2)] = float(fit)
+
+    all_mut_1.add(mut_1)
+    all_mut_2.add(mut_2)
+
+all_mut_1 = list(all_mut_1)
+all_mut_2 = list(all_mut_2)
+cov_mat_1 = np.zeros((len(all_mut_1), len(all_mut_1)))
+cov_mat_2 = np.zeros((len(all_mut_2), len(all_mut_2)))
+
+fit_m1 = {mut_1: [fit_dic[(mut_1, mut_2)] for mut_2 in all_mut_2] for mut_1 in all_mut_1}
+for i, mi1 in enumerate(all_mut_1):
+    for j, mj1 in enumerate(all_mut_1[i+1:], start=i+1):
+        cov_mat_1[i, j] = pearsonr(fit_m1[mi1], fit_m1[mj1])[0]
+
+fit_m2 = {mut_2: [fit_dic[(mut_1, mut_2)] for mut_1 in all_mut_1] for mut_2 in all_mut_2}
+for i, mi2 in enumerate(all_mut_2):
+    for j, mj2 in enumerate(all_mut_2[i+1:], start=i+1):
+        cov_mat_2[i, j] = pearsonr(fit_m2[mi2], fit_m2[mj2])[0]
+
+thres_1 = np.percentile(cov_mat_1.flatten(), 90)
+thres_2 = np.percentile(cov_mat_2.flatten(), 90)
+
+
+with open("./data/data_const.dat", "w") as out:
+    for i, mi1 in enumerate(all_mut_1):
+        for j, mj1 in enumerate(all_mut_1[i+1:], start=i+1):
+            if cov_mat_1[i, j] > thres_1:
+                out.write(f"0,{mi1},{mj1}\n")
+
+    for i, mi2 in enumerate(all_mut_2):
+        for j, mj2 in enumerate(all_mut_2[i+1:], start=i+1):
+            if cov_mat_2[i, j] > thres_2:
+                out.write(f"1,{mi2},{mj2}\n")
+#+end_src
+
+#+RESULTS:
+: None
+
+** test case
+
+#+begin_src python :results output
+from src.model import DLIM
+from src.utils import Data_model, train
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean
+from numpy.random import choice
+import matplotlib.pyplot as plt
+
+data = Data_model("./data/data_env_1.csv", 2, const_file="./data/data_const.dat")
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.03))
+
+train_data = data[train_id, :]
+val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+
+res = []
+for wc in [1, 2, 3, 5, 10, 15, 20, 40]:
+    tmp = []
+    for _ in range(5):
+        model = DLIM(2, nb_state=37, hid=32, nb_layer=1)
+        losses = train(model, train_data, const=data.const, nb_epoch=1000, lr=1e-2, wei_const=wc, wei_dec=1e-3)
+        fit, var, _ = model(val_data[:, :-1].int(), detach=True)
+        cor = pearsonr(fit.flatten(), val_data[:, -1].flatten())[0]
+        tmp += [cor]
+    res += [mean(tmp)]
+
+plt.scatter([1, 2, 3, 5, 10, 15, 20, 40], res)
+plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+fit, var, _ = model(val_data[:, :-1].int(), detach=True)
+ax.scatter(fit, val_data[:, [-1]], s=2)
+plt.tight_layout()
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+** benchmark with and without
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean, logspace, std
+from numpy.random import choice, seed
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+
+data = Data_model("./data/data_env_1.csv", 2, const_file="./data/data_const.dat")
+data_no = Data_model("./data/data_env_1.csv", 2)
+val_frac = logspace(-2, 0.1, num=7)
+val_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.3))
+train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
+train_full_data = data[train_full_id, :]
+val_data = data[val_id, :]
+
+def run_one(args):
+    i, frac = args
+    seed(42 + i)
+    train_id = choice(range(train_full_data.shape[0]), int(train_full_data.shape[0]*frac))
+    model = DLIM(2, nb_state=37, hid=32, nb_layer=1)
+    model_no = DLIM(2, nb_state=37, hid=32, nb_layer=1)
+
+    train_data = train_full_data[train_id, :]
+
+    _ = train(model, train_data, const=data.const, lr=1e-2, wei_const=10, wei_dec=1e-3, nb_epoch=300, bsize=64)
+    _ = train(model_no, train_data, lr=1e-2, wei_dec=1e-3, nb_epoch=300, bsize=64)
+
+    fit = model(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    fit_no = model_no(val_data[:, :-1].int())[0].detach().squeeze(-1)
+    cor_w = pearsonr(fit, val_data[:, -1])[0]
+    cor_n = pearsonr(fit_no, val_data[:, -1])[0]
+    return cor_w, cor_n
+
+res_w, res_n = [], []
+pool = Pool(20)
+for frac in val_frac:
+    res = pool.map(run_one, [(i, frac) for i in range(10)])
+    tmp_w, tmp_n = zip(*res)
+    res_w += [tmp_w]
+    res_n += [tmp_n]
+
+fig, ax = plt.subplots(figsize=(2.5, 2.5))
+val_frac = val_frac * data.data.shape[0]
+color1 = '#ffa500'  # modern orange
+color2 = '#607d8b'  # light gray-blue
+ax.plot(val_frac, [mean(el) for el in res_w], c=color1, lw=2, label="with reg")
+ax.plot(val_frac + val_frac*0.01, [mean(el) for el in res_n], c=color2, lw=2, label="no reg")
+ax.scatter(val_frac, [mean(el) for el in res_w], c=color1, s=15)
+ax.scatter(val_frac + val_frac*0.01, [mean(el) for el in res_n], c=color2, s=15)
+ax.errorbar(val_frac, [mean(el) for el in res_w], yerr=[std(el) for el in res_w], c=color1)
+ax.errorbar(val_frac + val_frac*0.01, [mean(el) for el in res_n], yerr=[std(el) for el in res_n], c=color2)
+ax.set_xscale("log")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.set_ylabel("$R^2$")
+ax.set_xlabel("nb. data points")
+ax.legend(frameon=False)
+plt.tight_layout()
+# plt.savefig("img/latent_reg.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+* RNA experiment
+** Generate data random sequences
+
+#+begin_src python :results output
+from random import choice
+from RNA import fold_compound
+NUC = ["A", "C", "G", "U"]
+seq =    "AAAAAAAAAAAAAA"
+struct = "..((((....))))"
+
+len_seq = len(seq)
+nb_seq = 100000
+seen = set()
+paired_position = True
+paired_pos = [(i, j) for i in range(len_seq) for j in range(len_seq) if i>j]
+print(len(paired_pos))
+with open("data/rand_seq_paired.dat", "w") as out:
+    for si in range(nb_seq):
+        rand_seq = "".join([choice(NUC) for _ in range(len_seq)])
+        if rand_seq not in seen:
+            nrj = fold_compound(rand_seq).eval_structure(struct)
+            if nrj < 0:
+                if not paired_position:
+                    seq= ",".join([n for n in rand_seq])
+                else:
+                    seq= ",".join([rand_seq[i]+"+"+rand_seq[j] for i, j in paired_pos])
+                out.write(f"{seq},{nrj}\n")
+                seen.add(rand_seq)
+#+end_src
+
+#+RESULTS:
+: 91
+
+** Model
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from numpy import mean, linspace, array, meshgrid
+from numpy.random import choice
+import numpy as np
+from torch import tensor, float32 as tfloat, cat as tcat
+import matplotlib.pyplot as plt
+
+data = Data_model("./data/rand_seq.dat", 14)
+# train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]))
+model = DLIM(14, nb_state=4, hid=32, nb_layer=2)
+
+train_data = data
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=2000, bsize=128)
+
+fit, var, _ = model(data[:, :-1].int())
+fit, var = fit.detach(), var.detach()
+
+fig, (ax, bx) = plt.subplots(2, figsize=(2, 4))
+ax.scatter(fit, data[:, [-1]], s=3, c="grey")
+x = linspace(min(fit), max(fit), num=100)
+y = linspace(min(fit), max(fit), num=100)
+ax.plot(x, y, lw=1.5, linestyle="--", c="orangered")
+ax.set_xlabel("Prediction")
+ax.set_ylabel("Energy")
+lat_space = model.genes.squeeze(-1)
+
+cov_l = np.zeros(14)
+for i in range(14):
+    distances = abs(lat_space[i][:, np.newaxis] - lat_space[i][np.newaxis, :])
+    cov_l[i] = distances.var()
+
+bx.bar(range(14), height=cov_l, color="black")
+
+bx.set_xlabel("Positions")
+bx.set_ylabel("Variance")
+bx.set_xticklabels([1, 5, 10, 14])
+bx.set_xticks([0, 4, 9, 13])
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+# plt.savefig("img/rna_res.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+
+** Model with pairs
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from numpy import mean, linspace, array, meshgrid
+from numpy.random import choice
+import numpy as np
+from torch import tensor, float32 as tfloat, cat as tcat
+import matplotlib.pyplot as plt
+
+data = Data_model("./data/rand_seq_paired.dat", 91)
+model = DLIM(91, nb_state=16, hid=64, nb_layer=1)
+
+train_data = data
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=400, bsize=64, wei_dec=1e-3)
+train_l, val_l = zip(*losses)
+plt.plot(train_l)
+plt.show()
+
+fit, var, _ = model(data[:, :-1].int())
+fit, var = fit.detach(), var.detach()
+
+fig, (ax, bx) = plt.subplots(1, 2, figsize=(4, 2))
+ax.scatter(fit, data[:, [-1]], s=3, c="grey")
+x = linspace(min(fit), max(fit), num=100)
+y = linspace(min(fit), max(fit), num=100)
+ax.plot(x, y, lw=1.5, linestyle="--", c="orangered")
+ax.set_xlabel("Prediction")
+ax.set_ylabel("Energy")
+cov_mat = np.zeros((14, 14))
+ppi = 0
+
+for i in range(14):
+    for j in range(14):
+        if i > j:
+            lat = tcat((model.genes[ppi], model.genes[ppi]), dim=1)
+            differences = lat[:, np.newaxis, :] - lat[np.newaxis, :, :]
+            distances = np.linalg.norm(differences.detach().numpy(), axis=2)
+            cov_mat[i, j] = distances.var()
+            cov_mat[j, i] = cov_mat[i, j]
+            ppi += 1
+
+bx.imshow((cov_mat))
+bx.set_xlabel("Positions")
+bx.set_ylabel("Positions")
+bx.set_xticks([0, 9])
+bx.set_yticks([0, 9])
+bx.set_xticklabels([1, 10])
+bx.set_yticklabels([1, 10])
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig("../img/rna_pairs.png", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+* Extrapolation experiment
+** one extrapolation
+
+#+begin_src python
+from torch import tensor, cat
+from src.model import DLIM
+from src.utils import Data_model, train
+from src.sim_data import Simulated
+from numpy import mean
+from numpy.random import choice, shuffle, sample
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from scipy.stats import pearsonr, spearmanr
+import matplotlib.patches as mpatches
+
+type_f = "exp"
+nb_var = 30
+data = Simulated(nb_var, type_f)
+
+model = DLIM(2, nb_state=30, hid=31, nb_layer=1)
+
+thres = 1.2
+A_id = [i for i, el  in enumerate(data.A) if el >= 2.7 or el < 1.5]
+B_id = [i for i, el  in enumerate(data.B) if el >= 2.7 or el < 1.5]
+# A_id = [i for i, el  in enumerate(data.A) if el >= 1.2]
+# B_id = [i for i, el  in enumerate(data.B) if el >= 1.2]
+nA_id = [i for i, el  in enumerate(data.A) if i not in A_id]
+nB_id = [i for i, el  in enumerate(data.B) if i not in B_id]
+train_id = [i for i, el  in enumerate(data.data) if el[0] in A_id and el[1] in B_id]
+len(train_id)
+train_data = data[train_id, :]
+val_id = [i for i in range(data.data.shape[0]) if i not in train_id]
+val_data = data[val_id, :]
+
+losses = train(model, train_data, lr=1e-2, nb_epoch=300, bsize=64, wei_dec=1e-3, val_data=val_data)
+train_l, val_l = zip(*losses)
+plt.plot(train_l)
+plt.plot(val_l)
+plt.show()
+
+fit_v, vari_v, lat_v = model(val_data[:, :-1].int(), detach=True)
+fit_t, var_t, lat_t = model(train_data[:, :-1].int(), detach=True)
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+ax.scatter(fit_v, val_data[:, [-1]], s=1, label="val", c="orange")
+ax.scatter(fit_t, train_data[:, [-1]], s=1, label="train", c="grey")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.legend(frameon=False)
+plt.tight_layout()
+plt.savefig(f"../img/extend/{type_f}_fit_quality.png", dpi=300, transparent=True)
+plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+data.plot(ax)
+ax.scatter(data.A[data.data[train_id, 0].int()], data.B[data.data[train_id, 1].int()], s=2, marker="o", c="black")
+ax.scatter(data.A[data.data[val_id, 0].int()], data.B[data.data[val_id, 1].int()], s=2, marker="o", c="white")
+# ax.plot([1.5, 5], [1.5, 1.5], linewidth=2, linestyle="--", c="black")
+# ax.plot([1.5, 1.5], [1.5, 5], linewidth=2, linestyle="--", c="black")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"../img/extend/{type_f}_land_data.png", dpi=300, transparent=True)
+plt.show()
+
+fig, bx = plt.subplots(1, figsize=(2.5, 2.5))
+model.plot(bx)
+bx.scatter(model.genes[0][data.data[train_id, 0].int()].detach(),
+           model.genes[1][data.data[train_id, 1].int()].detach(),
+           c=data.data[train_id, -1], s=2, cmap="bwr", marker="x")
+for el in ["top", "right"]:
+    bx.spines[el].set_visible(False)
+# bx.set_aspect(1)
+plt.tight_layout()
+plt.savefig(f"../img/extend/{type_f}_land_pred.png", dpi=300, transparent=True)
+plt.show()
+
+model.train_convert(A_id, data.A[A_id], 0)
+model.train_convert(B_id, data.B[B_id], 1)
+model.update_emb(nA_id, data.A[nA_id], 0)
+model.update_emb(nB_id, data.B[nB_id], 1)
+
+fig, (ax, bx) = plt.subplots(1, 2, figsize=(5, 2.5))
+ax.scatter(model.genes[0][A_id].detach(), data.A[A_id], c="black", s=20)
+ax.scatter(model.genes[0][nA_id].detach(), data.A[nA_id], c="orange", s=20)
+ax.plot(np.polyval(model.conversion[0], np.linspace(0, 5, 100)), np.linspace(0, 5, 100), linewidth=1, linestyle="--", c="grey")
+bx.scatter(model.genes[1][B_id].detach(), data.B[B_id], c="black", s=20)
+bx.scatter(model.genes[1][nB_id].detach(), data.B[nB_id], c="orange", s=20)
+bx.plot(np.polyval(model.conversion[1], np.linspace(0, 5, 100)), np.linspace(0, 5, 100), linewidth=1, linestyle="--", c="grey")
+ax.set_ylabel("$X$")
+ax.set_xlabel("$Z^1$")
+bx.set_ylabel("$Y$")
+bx.set_xlabel("$Z^2$")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"../img/extend/{type_f}_cor_bio.png", dpi=300, transparent=True)
+plt.show()
+
+fit_n, var_n, lat_n = model(val_data[:, :-1].int(), detach=True)
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+score = ((fit_n.flatten() - val_data[:, [-1]].flatten())**2).mean()
+score_v = ((fit_v.flatten() - val_data[:, [-1]].flatten())**2).mean()
+
+ax.scatter(fit_n, val_data[:, [-1]], s=2, c="grey", label=f"MSE$={score:.2f}$")
+ax.scatter(fit_v, val_data[:, [-1]], s=2, c="C0", label=f"MSE$={score_v:.2f}$")
+
+ax.set_xlabel("$\\hat{F}$")
+ax.set_ylabel("$F^{obs}$")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+ax.legend(frameon=False, ncol=1, fontsize=9)
+plt.tight_layout()
+plt.savefig(f"../img/extend/{type_f}new_fit.svg", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+** bootstrap the extrapolation
+
+#+begin_src python :results output
+from torch import tensor, cat
+from src.model import DLIM
+from src.utils import Data_model, train
+from src.sim_data import Simulated
+from numpy import mean
+from numpy.random import choice, shuffle, sample
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from scipy.stats import pearsonr, spearmanr, ttest_ind
+
+
+def test_score(model, val_data, A_id, B_id, nA_id, nB_id):
+    fit_v, vari_v, lat_v = model(val_data[:, :-1].int(), detach=True)
+
+    model.train_convert(A_id, data.A[A_id], 0)
+    model.train_convert(B_id, data.B[B_id], 1)
+    model.update_emb(nA_id, data.A[nA_id], 0)
+    model.update_emb(nB_id, data.B[nB_id], 1)
+
+    fit_n, var_n, lat_n = model(val_data[:, :-1].int(), detach=True)
+    score = ((fit_n.flatten() - val_data[:, [-1]].flatten())**2).mean()
+    score_v = ((fit_v.flatten() - val_data[:, [-1]].flatten())**2).mean()
+    return score, score_v
+
+
+type_f = "bio"
+nb_var = 30
+rho_l, rho_lv = [], []
+for i in range(10):
+    data = Simulated(nb_var, type_f)
+
+    model = DLIM(2, nb_state=nb_var, hid=32, nb_layer=1)
+
+    thres = 1.2
+    A_id = [i for i, el  in enumerate(data.A) if el >= thres]
+    B_id = [i for i, el  in enumerate(data.B) if el >= thres]
+    nA_id = [i for i, el  in enumerate(data.A) if i not in A_id]
+    nB_id = [i for i, el  in enumerate(data.B) if i not in B_id]
+    train_id = [i for i, el  in enumerate(data.data) if el[0] in A_id and el[1] in B_id]
+    train_data = data[train_id, :]
+    val_id = [i for i in range(data.data.shape[0]) if i not in train_id]
+    val_data = data[val_id, :]
+
+    losses = train(model, train_data, lr=1e-2, nb_epoch=400, bsize=64, wei_dec=1e-3, val_data=val_data)
+    score, score_v = test_score(model, val_data, A_id, B_id, nA_id, nB_id)
+    rho_l += [score]
+    rho_lv += [score_v]
+
+# remove the outliers where the training did not converged
+print(np.median([v for v in rho_l]))
+print(np.median([v for v in rho_lv]))
+test = ttest_ind(rho_l, rho_lv, equal_var=False)
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+
+# Plotting the boxplots
+ax.boxplot([rho_l, rho_lv], positions=[1, 2], labels=["Ext.", "Not Ext."])
+
+max_height = max(max(rho_l), max(rho_lv)) * 1.1
+y, h, col = max_height * 1.03, max_height * 0.03, 'black'  # y position and height for the line
+
+# Main line
+x1, x2 = 1, 2  # x positions for the boxplots
+ax.plot([x1, x2], [y, y], c=col)
+ax.plot([x1, x1], [y - h*1.3, y], c=col)
+ax.plot([x2, x2], [y - h*1.3, y], c=col)
+
+# Determining the maximum height for the line
+ax.text(1.5, max_height * 1.1, "***" if test.pvalue < 0.05 else "", ha='center', va='bottom')
+ax.set_ylabel("MSE")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig("../img/comp_extrapolation.png", dpi=300, transparent=True)
+plt.show()
+#+end_src

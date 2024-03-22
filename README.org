@@ -1,0 +1,63 @@
+* Overview
+
+D-LIM (Direct-Latent Interpretable Model) is a neural network that enhances
+genotype-fitness mapping by combining interpretability with predictive accuracy.
+It assumes independent phenotypic influences of genes on fitness, leading to
+advanced accuracy and insights into phenotype analysis and epistasis. The model
+includes an extrapolation method for better understanding of genetic
+interactions and integrates multiple data sources to improve performance in
+low-data biological research.
+
+* Requirements
+
+The implementation has been tested on a Linux system for: Python 3.10.9; Pytorch
+2.0.1; numpy 1.23.5; pandas 2.0.2.
+
+
+* Usage
+
+The code snippet bellow shows how to use fit D-LIM for fitness prediction.
+
+#+begin_src python
+from src.model import DLIM
+from src.utils import Data_model, train
+from numpy import mean, linspace
+from numpy.random import choice
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
+
+# Read the data, there are 2 genes (or variables) here
+data = Data_model("./data/data_env_1.csv", 2)
+# Here, we used 2 latent phenotype, the data has 37 possible mutations.
+# For D-LIM, we use here 1 hidden layer of 32 neurons.
+model = DLIM(2, nb_state=37, hid=32, nb_layer=1)
+
+
+# We manually split the data in training and validation.
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.2))
+train_data = data[train_id, :]
+val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+
+# We train the model with a learning rate of 1e-2 for 500 steps with batch size
+# 16 and regularization of 1e-2
+losses = train(model, train_data, lr=1e-2, nb_epoch=500, bsize=16, val_data=val_data, wei_dec=1e-2)
+
+# Now, we compute the validation prediction
+fit, var, _ = model(val_data[:, :-1].int(), detach=True)
+score = pearsonr(fit.flatten(), val_data[:, [-1]].flatten())[0]
+print(score)
+
+# Here, we plot the trained landscape
+fig, ax = plt.subplots(figsize=(2, 2))
+model.plot(ax, data)
+plt.show()
+#+end_src
+
+* Reproduction of the manuscript
+
+Figures and analyses of the manuscript can be found in ~reproducibility.org~.
+
+* License
+
+MIT
