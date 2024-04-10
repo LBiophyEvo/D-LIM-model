@@ -1,18 +1,21 @@
 from torch.utils.data import Dataset
 from torch import tensor, rand, cdist, randn, exp as texp
 from numpy.random import normal, uniform
-from numpy import linspace, arange, meshgrid, array, exp, sin, concatenate
+from numpy import linspace, arange, meshgrid, array, exp, sin, concatenate, cos
+from numpy import pi as npi
+from numpy.linalg import det
 
 
 class Simulated(Dataset):
     """Simulated data with more complexe relationships
     """
 
-    def __init__(self, nb_var, cor="exp", comp=False):
+    def __init__(self, nb_var, cor="exp", comp=False, alpha=npi/4):
         self.cor = cor
+        self.alpha = alpha
         if not comp:
-            self.A = uniform(0.0, 5, size=nb_var)
-            self.B = uniform(0.0, 5, size=nb_var)
+            self.A = uniform(0, 5, size=nb_var)
+            self.B = uniform(0, 5, size=nb_var)
         else:
             self.A = concatenate((uniform(1.0, 2, size=nb_var//2), uniform(4, 5, size=nb_var//2)))
             self.B = concatenate((uniform(1.0, 2, size=nb_var//2), uniform(4, 5, size=nb_var//2)))
@@ -42,6 +45,8 @@ class Simulated(Dataset):
         elif self.cor == "exp":
             ref_1x, ref_1y = 2., 2.
             land = 10 * (exp(-((ref_1x - p1)**2 + (ref_1y - p2)**2)))
+        elif self.cor == "tgaus":
+            land = self.rotated_gaussian_mesh(p1, p2)
         return p1, p2, p1i, p2i, land
 
     def mech_model(self, A, B, omega=0.2756, neta=4.5514, fit_ben=3.6089,
@@ -56,6 +61,21 @@ class Simulated(Dataset):
         F = lambda A, B: (term_a(A, B) * term_b(A, B) + normal(0, 0.1)) * \
             ((term_a(A, B) * term_b(A, B)) >= 0)
         return F(A, B) - F(A_wt_1, B_wt_1)
+
+    def rotated_gaussian_mesh(self, X, Y, center=[2.5, 2.5]):
+        a = self.alpha
+        m11 = cos(a)**2 / 2 + 2 * sin(a)**2
+        m12_m21 = -sin(2*a) / 4 + sin(2*a)
+        m22 = sin(a)**2 / 2 + 2 * cos(a)**2
+        M = array([[m11, m12_m21],
+                   [m12_m21, m22]])
+        det_M = det(M)
+        X = X - center[0]
+        Y = Y - center[0]
+
+        # Calculate the Gaussian function values for each (x, y) pair
+        F = exp(-((X**2 * M[0,0] + 2 * X * Y * M[0,1] + Y**2 * M[1,1]) / (2 * npi * det_M)))
+        return F
 
     def plot(self, ax):
         x_v = linspace(0, 5, 200)
