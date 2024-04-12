@@ -8,7 +8,7 @@
 
 project = 'D-LIM'
 copyright = '2024, Shuhui Wang, Vaitea Oupp'
-author = 'Shuhui Wang, Vaitea Oupp'
+author = 'Shuhui Wang, Vaitea Opuu'
 release = '1.0'
 
 # -- General configuration ---------------------------------------------------
