@@ -65,11 +65,12 @@ model.plot(ax, data)
 plt.show()
 #+end_src
 
-* Tutorials for using D-LIM 
-- [[https://colab.research.google.com/drive/1cAQoQMh54ed7d14EWMXbAo-KF1sC8MQn?usp=sharing][Tutorial 0: get phenotype and fitness map]] 
+* Tutorials for using D-LIM on Google Colab
+- [[https://colab.research.google.com/drive/1cAQoQMh54ed7d14EWMXbAo-KF1sC8MQn?usp=sharing][Tutorial 0: Get phenotype and fitness map]] 
 
 - [[https://colab.research.google.com/drive/115fPYpFj_my0jHe8yViJgXuOkJpa6hDY?usp=sharing][Tutorial 1: Extrapolate beyond the training using phenotypic measurements]] 
 
+- [[https://colab.research.google.com/drive/10rZ7d_LvqBB4Z4OXO-iQch-w94X_PGJb?usp=sharing][Tutorial 2: Integrating heterogeneous data sources]]
 #+RESULTS:
 : None
 
