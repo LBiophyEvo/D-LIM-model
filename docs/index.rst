@@ -5,9 +5,9 @@ D-LIM: Hypothesis-driven interpretable neural network for interactions between g
 MAVE-NN [#dlim_2024]_ enables the automatic modeling of phenotype-fitness maps from the data. This problem is then solved by training a neural network using a PyTorch backend. 
 To learn more about this modeling, please see our manuscript.
 
-.. [#dlim_2024]  `Shuhui W, Alexandre A, Philippe N, Vaitea O.
+.. [#dlim_2024]  Shuhui W, Alexandre A, Philippe N, Vaitea O.
     Hypothesis-driven interpretable neural network for interactions between genes
-    (2024). <https://doi.org/10.1101/2024.04.09.588719>`_
+    (2024). `<https://doi.org/10.1101/2024.04.09.588719>`_
     
 .. <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02661-7>`_
 
