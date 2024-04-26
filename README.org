@@ -71,6 +71,9 @@ plt.show()
 - [[https://colab.research.google.com/drive/115fPYpFj_my0jHe8yViJgXuOkJpa6hDY?usp=sharing][Tutorial 1: Extrapolate beyond the training using phenotypic measurements]] 
 
 - [[https://colab.research.google.com/drive/10rZ7d_LvqBB4Z4OXO-iQch-w94X_PGJb?usp=sharing][Tutorial 2: Integrating heterogeneous data sources]]
+
+* More details of the usage and the installation can be found in doc:
+- [[https://d-lim.readthedocs.io/en/latest/][Read the docs of D-LIM]]
 #+RESULTS:
 : None
 
