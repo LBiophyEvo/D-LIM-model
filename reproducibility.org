@@ -287,9 +287,9 @@ import numpy as np
 from sklearn.metrics import r2_score
 from scipy.stats import pearsonr, spearmanr
 
-type_f = "comp"
+type_f = "tgaus"
 nb_var = 30
-data = Simulated(nb_var, type_f, comp=False)
+data = Simulated(nb_var, type_f, comp=False, alpha=0.25)
 
 train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.5))
 model = DLIM(2, nb_state=nb_var, hid=32, nb_layer=1)
@@ -322,17 +322,17 @@ bx.scatter(model.genes[0][data.data[:, 0].int()].detach(),
 for el in ["top", "right"]:
     bx.spines[el].set_visible(False)
 plt.tight_layout()
-plt.savefig(f"../img/{type_f}_land_synth.png", dpi=300, transparent=True)
+# plt.savefig(f"../img/{type_f}_land_synth.png", dpi=300, transparent=True)
 plt.show()
 
-# fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
-# data.plot(ax)
-# ax.scatter(data.A[data.data[:, 0].int()], data.B[data.data[:, 1].int()], c="grey", s=2, cmap="bwr", marker="x")
-# for el in ["top", "right"]:
-#     ax.spines[el].set_visible(False)
-# plt.tight_layout()
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+data.plot(ax)
+ax.scatter(data.A[data.data[:, 0].int()], data.B[data.data[:, 1].int()], c="grey", s=2, cmap="bwr", marker="x")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
 # plt.savefig(f"../img/{type_f}_land_real.png", dpi=300, transparent=True)
-# plt.show()
+plt.show()
 
 fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
 score_A = spearmanr(model.genes[0].detach(), data.A)[0]
@@ -348,6 +348,136 @@ ax.annotate(f"$\\rho={score_A:.1f}$", xy=(0.3, 0.93), xycoords="axes fraction", 
 ax.annotate(f"$\\rho={score_B:.1f}$", xy=(0.3, 0.8), xycoords="axes fraction", fontsize=12, c="C1")
 plt.tight_layout()
 # plt.savefig(f"../img/{type_f}_corz_synth.svg", dpi=300, transparent=True)
+plt.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+** knowledge graph
+
+#+begin_src python
+from dlim import DLIM
+from dlim.utils import Data_model, train, spectral_ordering
+from dlim.sim_data import Simulated
+from numpy import mean
+from numpy.random import choice, shuffle
+import matplotlib.pyplot as plt
+from numpy import linspace, meshgrid
+import numpy as np
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr, spearmanr
+import torch
+
+type_f = "tgaus"
+nb_var = 40
+data = Simulated(nb_var, type_f, comp=False, alpha=145)
+
+cov_mat_1 = np.zeros((nb_var, nb_var))
+cov_mat_2 = np.zeros((nb_var, nb_var))
+
+for i in range(nb_var):
+    for j in range(nb_var):
+        if i < j:
+            di = data.data[data.data[:, 0] == float(i)][:, -1]
+            dj = data.data[data.data[:, 0] == float(j)][:, -1]
+            cov_mat_1[i, j] = pearsonr(di, dj)[0]
+            cov_mat_1[j, i] = cov_mat_1[i, j]
+
+for i in range(nb_var):
+    for j in range(nb_var):
+        if i < j:
+            di = data.data[data.data[:, 1] == float(i)][:, -1]
+            dj = data.data[data.data[:, 1] == float(j)][:, -1]
+            cov_mat_2[i, j] = pearsonr(di, dj)[0]
+            cov_mat_2[j, i] = cov_mat_1[i, j]
+
+thres_1 = np.percentile(cov_mat_1.flatten(), 70)
+thres_2 = np.percentile(cov_mat_2.flatten(), 70)
+
+data.const = {0: torch.zeros((nb_var, nb_var)), 1: torch.zeros((nb_var, nb_var))}
+for i in range(nb_var):
+    for j in range(nb_var):
+        if i < j:
+            if cov_mat_1[i, j] > thres_1:
+                data.const[0][i, j] = 1.
+                data.const[0][j, i] = 1.
+            if cov_mat_2[i, j] > thres_2:
+                data.const[1][i, j] = 1.
+                data.const[1][j, i] = 1.
+
+emb_init = [spectral_ordering(data.const[0], 1./4.).reshape(-1, 1),
+            spectral_ordering(data.const[1], 1./4.).reshape(-1, 1)]
+
+plt.scatter(data.A, emb_init[0].flatten())
+plt.scatter(data.B, emb_init[1].flatten())
+plt.xlabel("X")
+plt.ylabel("Spectral Order")
+plt.show()
+
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.7))
+model = DLIM(2, nb_state=nb_var, hid=32, nb_layer=0, emb_init=emb_init)
+
+train_data = data[train_id, :]
+val_id = [i for i in range(data.data.shape[0]) if i not in train_id]
+shuffle(val_id)
+val_data = data[val_id[:int(data.data.shape[0]*0.3)], :]
+
+# losses = train(model, train_data, lr=1e-2, nb_epoch=300, bsize=64, wei_dec=1e-3, val_data=val_data, wei_const=100, const=data.const)
+losses = train(model, train_data, lr=1e-3, nb_epoch=300, bsize=64, wei_dec=1e-4, val_data=val_data)
+train_l, val_l = zip(*losses)
+
+# plt.plot(train_l)
+plt.plot(val_l)
+plt.show()
+
+fit, var, lat = model(val_data[:, :-1].int(), detach=True)
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+ax.scatter(fit, val_data[:, [-1]])
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+score = r2_score(fit.flatten(), val_data[:, [-1]].flatten())
+ax.text(fit.min(), fit.max(), f"$\\rho={score:.2f}$")
+plt.savefig(f"./img/{type_f}_val_synth.png", dpi=300, transparent=True)
+plt.show()
+
+fig, bx = plt.subplots(1, figsize=(2.5, 2.5))
+model.plot(bx)
+bx.scatter(model.genes[0][data.data[:, 0].int()].detach(),
+           model.genes[1][data.data[:, 1].int()].detach(),
+           c=data.data[:, -1], s=2, cmap="bwr", marker="x")
+for el in ["top", "right"]:
+    bx.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}_land_synth.png", dpi=300, transparent=True)
+# plt.savefig(f"./img/land_synth.png", dpi=300, transparent=True)
+plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+data.plot(ax)
+ax.scatter(data.A[data.data[:, 0].int()], data.B[data.data[:, 1].int()], c="grey", s=2, cmap="bwr", marker="x")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}_land_real.png", dpi=300, transparent=True)
+plt.show()
+
+fig, ax = plt.subplots(1, figsize=(2.5, 2.5))
+score_A = spearmanr(model.genes[0].detach(), data.A)[0]
+score_B = spearmanr(model.genes[1].detach(), data.B)[0]
+ax.scatter(model.genes[0].detach(), data.A, c="C0", s=3)
+ax.scatter(model.genes[1].detach(), data.B, c="C1", s=3)
+ax.set_xlabel("$\\varphi^1$$ | $\\varphi^2$")
+ax.set_ylabel("X | Y")
+for el in ["top", "right"]:
+    ax.spines[el].set_visible(False)
+    # bx.spines[el].set_visible(False)
+ax.annotate(f"$\\rho={score_A:.1f}$", xy=(0.3, 0.93), xycoords="axes fraction", fontsize=12, c="C0")
+ax.annotate(f"$\\rho={score_B:.1f}$", xy=(0.3, 0.8), xycoords="axes fraction", fontsize=12, c="C1")
+plt.tight_layout()
+plt.savefig(f"./img/{type_f}_corz_synth.png", dpi=300, transparent=True)
 plt.show()
 #+end_src
 
@@ -431,8 +561,8 @@ for i, mi2 in enumerate(all_mut_2):
     for j, mj2 in enumerate(all_mut_2[i+1:], start=i+1):
         cov_mat_2[i, j] = pearsonr(fit_m2[mi2], fit_m2[mj2])[0]
 
-thres_1 = np.percentile(cov_mat_1.flatten(), 90)
-thres_2 = np.percentile(cov_mat_2.flatten(), 90)
+thres_1 = np.percentile(cov_mat_1.flatten(), 70)
+thres_2 = np.percentile(cov_mat_2.flatten(), 70)
 
 
 with open("./data/data_const.dat", "w") as out:
@@ -486,6 +616,51 @@ fit, var, _ = model(val_data[:, :-1].int(), detach=True)
 ax.scatter(fit, val_data[:, [-1]], s=2)
 plt.tight_layout()
 plt.show()
+#+end_src
+
+#+RESULTS:
+
+** Spectral initialization
+
+#+begin_src python :results output
+from dlim import DLIM
+from dlim.utils import Data_model, train, spectral_ordering
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+from numpy import mean
+from numpy.random import choice
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
+
+data = Data_model("./data/data_env_1.csv", 2, const_file="./data/data_const.dat")
+train_id = choice(range(data.data.shape[0]), int(data.data.shape[0]*0.1))
+
+train_data = data[train_id, :]
+val_data = data[[i for i in range(data.data.shape[0]) if i not in train_data], :]
+
+emb_init = [spectral_ordering(data.const[0], 1./4.).reshape(-1, 1),
+            spectral_ordering(data.const[1], 1./4.).reshape(-1, 1)]
+
+wc = 5
+tmp = []
+for _ in range(20):
+    model = DLIM(2, nb_state=37, hid=32, nb_layer=0)
+    model_i = DLIM(2, nb_state=37, hid=32, nb_layer=0, emb_init=emb_init)
+    losses = train(model, train_data, nb_epoch=300, lr=1e-3, wei_dec=1e-4)
+    losses = train(model_i, train_data, nb_epoch=300, lr=1e-3, wei_dec=1e-4)
+    fit, var, _ = model(val_data[:, :-1].int(), detach=True)
+    fit_i, var_i, _ = model_i(val_data[:, :-1].int(), detach=True)
+    cor = pearsonr(fit.flatten(), val_data[:, -1].flatten())[0]
+    cor_i = pearsonr(fit_i.flatten(), val_data[:, -1].flatten())[0]
+    tmp += [(cor, cor_i)]
+
+li_cor = [el for _, el in tmp]
+l_cor = [el for el, _ in tmp]
+
+plt.boxplot([li_cor, l_cor])
+plt.show()
+
+ttest_ind(li_cor, l_cor, alternative="greater")
 #+end_src
 
 #+RESULTS:
@@ -682,4 +857,21 @@ plt.show()
 
 #+RESULTS:
 : None
+
+* test the cascade model
+
+#+begin_src python
+
+def cascade(self, X, Y):
+    M_arac, M_tetr, M_lacl = 10
+    m_arac, m_tetr, m_lacl = 10e-3
+    n_arac, n_tetr, n_lacl = 1.
+    tetr = lambda C_ara: (M_arac - m_arac) / (1 + (C_ara/K_arac)**n_arac) + m_arac
+    lacl = lambda C_tetr: (M_tetr - m_tetr) / (1 + (C_tetr/K_tetr)**n_tetr) + m_tetr
+    out_l = lambda lacl: (M_lacl - m_lacl) / (1 + (lacl/k_lacl)**n_lacl) + m_lacl
+    out = (M_act - m_act) (in_v/k_act)**n_act / (1 + (in_v/k_act)**n_act) + m_act
+
+x_v = linspace(1e-3, 5, 200)
+y_v = linspace(1e-3, 5, 200)
+#+end_src
 

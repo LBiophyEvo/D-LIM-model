@@ -1,8 +1,13 @@
 from torch.utils.data import Dataset, DataLoader
 from torch import tensor, optim, rand, zeros, no_grad
 from torch.nn import GaussianNLLLoss
+import torch
 from pandas import read_csv
-from numpy import mean, newaxis
+import numpy as np
+from numpy import mean, newaxis, argsort, diag, zeros, intersect1d
+from scipy.stats import pearsonr
+from scipy.spatial.distance import cosine, euclidean
+from scipy.linalg import eigh
 
 
 class Data_model(Dataset):
@@ -21,8 +26,8 @@ class Data_model(Dataset):
         const_file (str, optional): Path to the constraints file. Defaults to None.
     """
 
-    def __init__(self, infile, nb_var, const_file=None):
-        data = read_csv(infile, header=None)
+    def __init__(self, infile, nb_var, sep=",", header=None):
+        data = read_csv(infile, header=header, sep=sep)
         data = data.dropna()
         self.all_mut = [set() for i in range(nb_var)]
         self.mut_to_index = [None for i in range(nb_var)]
@@ -36,18 +41,6 @@ class Data_model(Dataset):
             data.iloc[:, i] = data.iloc[:, i].map(self.mut_to_index[i])
 
         self.data = tensor(data.to_numpy(dtype=float))
-
-        if const_file is not None:
-            self.const = {i: zeros((nb, nb)) for i, nb in enumerate(self.nb_val)}
-            const_d = read_csv(const_file, header=None)
-
-            for i, el in const_d.iterrows():
-                gi = el.iloc[0]
-                pi, pj = self.mut_to_index[gi][el.iloc[1]], self.mut_to_index[gi][el.iloc[2]]
-                self.const[gi][pi, pj] = 1.
-                self.const[gi][pj, pi] = 1.
-        else:
-            self.const = None
 
     def __getitem__(self, index):
         return self.data[index]
@@ -76,8 +69,7 @@ def dist_loss(lat, const, wei=1):
     return wei*sum(losses)/len(losses)
 
 
-def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32,
-          wei_const=1., wei_dec=1e-3, val_data=None):
+def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32, wei_dec=1e-4, pen_emb=1e-2):
     """
     Train a given model on the specified dataset.
 
@@ -88,7 +80,6 @@ def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32,
         lr (float, optional): Learning rate for the optimizer. Defaults to 1e-3.
         nb_epoch (int, optional): Number of training epochs. Defaults to 100.
         bsize (int, optional): Batch size for training. Defaults to 32.
-        wei_const (float, optional): Weight for constraints. Defaults to 1.
         wei_dec (float, optional): Weight decay for the optimizer. Defaults to 1e-3.
         val_data (Dataset, optional): Validation dataset. Defaults to None.
 
@@ -99,31 +90,19 @@ def train(model, data, const=None, lr=1e-3, nb_epoch=100, bsize=32,
     loss_f = GaussianNLLLoss()
     losses = []
     for _ in range(nb_epoch):
-        loss_d, loss_b, loss_l = [], [], []
+        loss_b, loss_l = [], []
         loader = DataLoader(data, batch_size=bsize, shuffle=True)
         for bi, batch in enumerate(loader):
             optimizer.zero_grad()
             # use the simple loss
-            pfit, var, lat = model(batch[:, :-1].int())
+            pfit, var, lat = model(batch[:, :-1].long())
             loss_mse = loss_f(pfit, batch[:, [-1]], var)
-            if const is not None:
-                loss_dist = dist_loss(model.genes, const, wei_const)
-            else:
-                loss_dist = tensor(0.)
-            loss = loss_mse + loss_dist
+            loss_dist = (sum(torch.norm(el, p=2) for el in model.genes)/len(model.genes))**2
+            loss = loss_mse + pen_emb * loss_dist
             loss.backward()
             optimizer.step()
             loss_b += [loss_mse.item()]
-            loss_d += [loss_dist.item()]
-        if val_data is not None:
-            with no_grad():
-                model.eval()
-                pfit_, var_, lat = model(val_data[:, :-1].int())
-                loss_mse_v = loss_f(pfit_, val_data[:, [-1]], var_)
-                model.train()
-            losses += [(mean(loss_b), loss_mse_v)]
-        else:
-            losses += [(mean(loss_b), 0)]
+        losses += [mean(loss_b)]
     return losses
 
 
@@ -151,7 +130,7 @@ def train_reg(model, data, lr=1e-3, nb_epoch=100, bsize=32, wei_dec=1e-3, val_da
         for bi, batch in enumerate(loader):
             optimizer.zero_grad()
             # use the simple loss
-            pfit = model(batch[:, :-1].int())
+            pfit = model(batch[:, :-1].long())
             loss_mse = ((pfit - batch[:, [-1]])**2).mean()
 
             loss = loss_mse
@@ -161,9 +140,70 @@ def train_reg(model, data, lr=1e-3, nb_epoch=100, bsize=32, wei_dec=1e-3, val_da
             loss_d += [0]
         if val_data is not None:
             with no_grad():
-                pfit = model(val_data[:, :-1].int())
+                pfit = model(val_data[:, :-1].long())
                 loss_mse_v = ((pfit - val_data[:, [-1]])**2).mean()
             losses += [(mean(loss_b), loss_mse_v)]
         else:
             losses += [(mean(loss_b), 0)]
     return losses
+
+
+def spectral_init(A, eig_val=False):
+    """Compute the spectral initialization.
+    - A is the adjacency matrix
+    """
+
+    if not isinstance(A, torch.Tensor):
+        A = torch.Tensor(A)
+    if A.min() <= 0.:
+        A = A - A.min()
+        A += 1e-10              # numerical stability
+    D_v = A.sum(axis=1)
+    D = torch.diag(D_v)
+    L = D - A
+    D_is = torch.diag(1.0 / (D_v**0.5))
+    L = D_is @ L @ D_is
+
+    eigenvalues, eigenvectors = torch.linalg.eigh(L)
+    fiedler_vector = eigenvectors[:, 1]
+    fiedler_vector = (fiedler_vector - fiedler_vector.mean())/fiedler_vector.std()
+    if eig_val:
+        return fiedler_vector, eigenvalues
+    else:
+        return fiedler_vector
+
+
+def compute_cor_scores(train_data, all_var, col, sim="pearson", temp=1.):
+    """This only works for only two, TODO update it for more
+    """
+    nb_var = len(all_var)
+    cov_mat = zeros((nb_var, nb_var))
+    col_d = [i for i in range(train_data.shape[1]-1) if i!=col]
+
+    for _, i in all_var.items():
+        for _, j in all_var.items():
+            if i <= j:
+                di = train_data[train_data[:, col] == float(i)]
+                dj = train_data[train_data[:, col] == float(j)]
+                # Convert rows into a structured array format for element-wise comparison
+                di_sub = di[:, col_d]
+                dj_sub = dj[:, col_d]
+                # Find matching rows by broadcasting and comparing all rows
+                matches = (di_sub[:, None] == dj_sub).all(axis=2)
+                # Get the indices of matches
+                a1_idx, a2_idx = np.where(matches)
+
+                if a1_idx.shape[0] > 2:
+                    if sim == "pearson":
+                        cov_mat[i, j] = pearsonr(di[a1_idx, -1], dj[a2_idx, -1])[0]
+                    elif sim == "cosine":
+                        cov_mat[i, j] = 1 - cosine(di[a1_idx, -1], dj[a2_idx, -1])
+                    elif sim == "euclidean":
+                        dist = ((di[a1_idx, -1]-dj[a2_idx, -1])**2).mean()
+                        cov_mat[i, j] = np.exp(- dist/temp)
+                    else:
+                        raise ValueError("Incorrect similarity type proposed")
+                else:
+                    cov_mat[i, j] = 0.
+                cov_mat[j, i] = cov_mat[i, j]
+    return  cov_mat

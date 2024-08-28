@@ -2,6 +2,7 @@ from torch import nn, cat as tcat, tensor, save as tsave, load as tload, no_grad
 from torch import normal, rand, exp, log, randn, arange, sin, cos, matmul, normal
 from torch import float32 as tfloat, cat, ones_like
 from numpy import sqrt, linspace, meshgrid, concatenate, newaxis, polyfit, polyval
+from .utils import compute_cor_scores, spectral_init
 import torch.nn.init as init
 import torch
 
@@ -66,16 +67,19 @@ class DLIM(nn.Module):
         plot(ax, data=None): Plots the model predictions.
     """
 
-    def __init__(self, nb_var, nb_state=5, emb=1, hid=128, nb_layer=0):
+    def __init__(self, nb_var, nb_state=5, emb=1, hid=128, nb_layer=0, emb_init=None):
         super(DLIM, self).__init__()
 
         self.nb_var = nb_var
-        if type(nb_var) is int:
+        if emb_init is not None:
+            self.genes = nn.ParameterList([nn.Parameter(el) for el in emb_init])
+        elif type(nb_var) is int:
             self.genes = nn.ParameterList([nn.Parameter(randn((nb_state, emb))) for nb in range(nb_var)])
         else:
             self.genes = nn.ParameterList([nn.Parameter(randn((nb, emb))) for nb in nb_var])
-        for el in self.genes:
-            init.xavier_normal_(el)
+        if emb_init is None:
+            for el in self.genes:
+                init.xavier_normal_(el)
         self.epi = Block(len(self.genes)*emb, 2, hid, nb_layer)
         self.conversion = [None for _ in self.genes]
 
@@ -95,29 +99,38 @@ class DLIM(nn.Module):
         "gene = id; pheno = float; variable = variable id"
         self.conversion[variable] = polyfit(pheno, self.genes[variable][genes].detach(), 3)
 
+    def spec_init_emb(self, train_data, all_val, sim="pearson", temp=1.):
+        "apply the spectral initialization"
+        emb_init = []
+        nb_variable = train_data.shape[1] - 1
+        for c in range(nb_variable):
+            cov_mat = compute_cor_scores(train_data, all_val[c], c, sim=sim, temp=temp)
+            emb_init += [nn.Parameter(spectral_init(cov_mat).reshape(-1, 1))]
+        self.genes = nn.ParameterList(emb_init)
+
     def update_emb(self, genes, pheno, variable):
         self.genes[variable].data[genes] = tensor(polyval(self.conversion[variable], pheno),
                                                   dtype=self.genes[variable].dtype).reshape(-1, 1)
 
-    def plot(self, ax, data=None):
+    def plot(self, ax, data=None, fontsize=12):
         "only for pairs"
         min_x, max_x = self.genes[0].min().item(), self.genes[0].max().item()
         delta_x = 0.1*(max_x - min_x)
         min_y, max_y = self.genes[1].min().item(), self.genes[1].max().item()
         delta_y = 0.1*(max_y - min_y)
-        x_v = linspace(min_x - delta_x, max_x + delta_x, 200)
-        y_v = linspace(min_y - delta_y, max_y + delta_y, 200)
+        x_v = linspace(min_x - delta_x, max_x + delta_x, 300)
+        y_v = linspace(min_y - delta_y, max_y + delta_y, 300)
         x_m, y_m = meshgrid(x_v, y_v)
         data_np = concatenate((x_m[newaxis, :, :], y_m[newaxis, :, :]), axis=0)
         data_m = tensor(data_np).transpose(0, 2).reshape(-1, 2).to(tfloat)
-        pred_l = self.epi(data_m)[:, [0]].detach().numpy().reshape(200, 200).T
+        pred_l = self.epi(data_m)[:, [0]].detach().numpy().reshape(300, 300).T
 
         ax.contourf(x_m, y_m, pred_l, cmap="bwr", alpha=0.4)
-        ax.set_xlabel("$Z^1$")
-        ax.set_ylabel("$Z^2$")
+        ax.set_xlabel("$\\varphi_1$", fontsize=fontsize)
+        ax.set_ylabel("$\\varphi_2$", fontsize=fontsize)
 
         if data is not None:
-            fit, var, lat = self.forward(data[:, :-1].int(), detach=True)
+            fit, var, lat = self.forward(data[:, :-1].long(), detach=True)
             ax.scatter(lat[:, 0], lat[:, 1], c=data[:, -1], s=2, cmap="bwr", marker="x")
 
 
