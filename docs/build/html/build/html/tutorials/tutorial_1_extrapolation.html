@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutorial 1: part of the data will be trained and using \(w(\phi) = \varphi\) to predict the fitness of new mutation combinations &mdash; D-LIM 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+    <link rel="canonical" href="https://dlim.readthedocs.iobuild/html/tutorials/tutorial_1_extrapolation.html"/>
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/dlim.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Modeling Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html">Tutorial 0: get the phenotype and fitness landscape</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Load-your-data">Load your data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Define-a-DLIM-model">Define a DLIM model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Split-the-data-and-train">Split the data and train</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Check-the-learning-loss">Check the learning loss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Check-the-fitting-quality">Check the fitting quality</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Plot-the-landscape">Plot the landscape</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Get-the-relationship-between-estimated-phenotype-and-fitness">Get the relationship between estimated phenotype and fitness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_0_plot_landscape.html#Get-the-variance-of-prediction">Get the variance of prediction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html">Tutorial 1: part of the data will be trained and using <span class="math notranslate nohighlight">\(w(\phi) = \varphi\)</span> to predict the fitness of new mutation combinations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Load-the-data">Load the data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Define-the-model">Define the model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Choose-the-data-for-training">Choose the data for training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Visualization-of-the-selected-training-data">Visualization of the selected training data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#train-the-model">train the model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Check-the-learning-loss">Check the learning loss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Get-the-predicted-landscape">Get the predicted landscape</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Check-fitting-quality">Check fitting quality</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Extrapolation-by-fitting-the-relationship-between-the-estimated-phenotype-\varphi-and-the-measured-phenotype-\phi">Extrapolation by fitting the relationship between the estimated phenotype <span class="math notranslate nohighlight">\(\varphi\)</span> and the measured phenotype <span class="math notranslate nohighlight">\(\phi\)</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Check-the-extrapolation-on-the-variables">Check the extrapolation on the variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_1_extrapolation.html#Compare-the-model-with-and-without-extrapolation">Compare the model with and without extrapolation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">D-LIM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorial 1: part of the data will be trained and using <span class="math notranslate nohighlight">\(w(\phi) = \varphi\)</span> to predict the fitness of new mutation combinations</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/LBiophyEvo/D-LIM-model/blob/main/docs/build/html/tutorials/tutorial_1_extrapolation.ipynb" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Tutorial-1:-part-of-the-data-will-be-trained-and-using-w(\phi)-=-\varphi-to-predict-the-fitness-of-new-mutation-combinations">
+<h1>Tutorial 1: part of the data will be trained and using <span class="math notranslate nohighlight">\(w(\phi) = \varphi\)</span> to predict the fitness of new mutation combinations<a class="headerlink" href="#Tutorial-1:-part-of-the-data-will-be-trained-and-using-w(\phi)-=-\varphi-to-predict-the-fitness-of-new-mutation-combinations" title="Link to this heading"></a></h1>
+<p>If you didn’t install dlim: !pip install dlim</p>
+<p>dlim includes: - DLIM: model - utils: for data and training - plot_figure: for plotting figures - sim_data: simulate data points</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard imports</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">tensor</span><span class="p">,</span> <span class="n">cat</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">r2_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">pearsonr</span><span class="p">,</span> <span class="n">spearmanr</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="c1"># Load dlim model and data</span>
+<span class="kn">from</span> <span class="nn">dlim</span> <span class="kn">import</span> <span class="n">DLIM</span>
+<span class="kn">from</span> <span class="nn">dlim.utils</span> <span class="kn">import</span> <span class="n">Data_model</span><span class="p">,</span> <span class="n">train</span>
+<span class="kn">from</span> <span class="nn">dlim.sim_data</span> <span class="kn">import</span> <span class="n">Simulated</span>
+</pre></div>
+</div>
+</div>
+<section id="Load-the-data">
+<h2>Load the data<a class="headerlink" href="#Load-the-data" title="Link to this heading"></a></h2>
+<p>for the simulated data, there are only 2 genes - nb_state: specify how many possible mutations on each gene - type_f: choose the landscape including “bio”, “add”, “quad”, “saddle”, “hat”, “exp”</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>1. bio: the mechanistic model from Kemble et all
+$$     F(X,Y) = \left ( w + \mu \varphi - \frac{\nu }{1/\eta - \varphi } \right )\left ( 1- \theta_X X - \theta_Y Y\right ) $$
+2. add: $$ F(X,Y) = X + Y$$
+3. quad: $$F(X,Y) = X*Y$$
+4. saddle: $$F(X,Y) = X^2 - Y^2$$
+5. hat: $$F(X,Y) = sin( X^2 + Y^2)$$
+6. exp: $$F(X,Y) = 10 \times (e^{-(2-X)^2 - (2-Y)^2})$$
+</pre></div>
+</div>
+<p>You can also define yoru own functions by adding your function in dlim.sim_data package</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># choose the landscape: bio</span>
+<span class="n">type_f</span> <span class="o">=</span> <span class="s2">&quot;bio&quot;</span>
+<span class="n">nb_state</span> <span class="o">=</span> <span class="mi">36</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Simulated</span><span class="p">(</span><span class="n">nb_state</span><span class="p">,</span> <span class="n">type_f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Define-the-model">
+<h2>Define the model<a class="headerlink" href="#Define-the-model" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>nb_var = 2, because in the simulated data, there are two genes</p></li>
+<li><p>nb_state: the number of possible mutations in each gene</p></li>
+<li><p>hid: the number of neurons in the hidden layers</p></li>
+<li><p>nb_layer: the number of hiden layers</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">DLIM</span><span class="p">(</span><span class="n">nb_var</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nb_state</span><span class="o">=</span><span class="n">nb_state</span><span class="p">,</span> <span class="n">hid</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">nb_layer</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Choose-the-data-for-training">
+<h2>Choose the data for training<a class="headerlink" href="#Choose-the-data-for-training" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span>  <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">)</span> <span class="k">if</span> <span class="n">el</span> <span class="o">&gt;=</span> <span class="mf">1.2</span><span class="p">]</span>
+<span class="n">B_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span>  <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">)</span> <span class="k">if</span> <span class="n">el</span> <span class="o">&gt;=</span> <span class="mf">1.2</span><span class="p">]</span>
+<span class="n">nA_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span>  <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">A_id</span><span class="p">]</span>
+<span class="n">nB_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span>  <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">B_id</span><span class="p">]</span>
+<span class="n">train_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span>  <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">if</span> <span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">A_id</span> <span class="ow">and</span> <span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">B_id</span><span class="p">]</span>
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">val_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">train_id</span><span class="p">]</span>
+<span class="n">val_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">val_id</span><span class="p">,</span> <span class="p">:]</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Visualization-of-the-selected-training-data">
+<h2>Visualization of the selected training data<a class="headerlink" href="#Visualization-of-the-selected-training-data" title="Link to this heading"></a></h2>
+<p>the black dots are the training sample, the whit dots are testing sample</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()],</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">val_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()],</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">val_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">]:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/swang/miniconda3/envs/dlim_env/lib/python3.11/site-packages/dlim/sim_data.py:52: RuntimeWarning: divide by zero encountered in divide
+  flux = lambda A, B: 1. / (1./A + 1./B + neta)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_10_1.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_10_1.png" />
+</div>
+</div>
+</section>
+<section id="train-the-model">
+<h2>train the model<a class="headerlink" href="#train-the-model" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>the default optimizer is Adam</p></li>
+<li><p>lr: learning rate</p></li>
+<li><p>nb_epoch: maximum epoch of optimization</p></li>
+<li><p>wei_dec: weight decay</p></li>
+<li><p>bsize: batch size</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">losses</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">nb_epoch</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bsize</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">wei_dec</span><span class="o">=</span><span class="mf">1e-1</span><span class="p">,</span> <span class="n">val_data</span><span class="o">=</span><span class="n">val_data</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+</section>
+<section id="Check-the-learning-loss">
+<h2>Check the learning loss<a class="headerlink" href="#Check-the-learning-loss" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train_l</span><span class="p">,</span> <span class="n">val_l</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">losses</span><span class="p">)</span>
+<span class="c1"># plot the training and validation curve</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">train_l</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_14_0.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_14_0.png" />
+</div>
+</div>
+</section>
+<section id="Get-the-predicted-landscape">
+<h2>Get the predicted landscape<a class="headerlink" href="#Get-the-predicted-landscape" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">bx</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bx</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+           <span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">()]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+           <span class="n">c</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;bwr&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">]:</span>
+    <span class="n">bx</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1"># bx.set_aspect(1)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_16_0.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_16_0.png" />
+</div>
+</div>
+</section>
+<section id="Check-fitting-quality">
+<h2>Check fitting quality<a class="headerlink" href="#Check-fitting-quality" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fit_no_exp</span><span class="p">,</span> <span class="n">vari_no_exp</span><span class="p">,</span> <span class="n">lat_no_exp</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">val_data</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">(),</span> <span class="n">detach</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fit_t</span><span class="p">,</span> <span class="n">var_t</span><span class="p">,</span> <span class="n">lat_t</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">train_data</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">(),</span> <span class="n">detach</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">fit_no_exp</span><span class="p">,</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">fit_t</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">]:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_18_0.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_18_0.png" />
+</div>
+</div>
+</section>
+<section id="Extrapolation-by-fitting-the-relationship-between-the-estimated-phenotype-\varphi-and-the-measured-phenotype-\phi">
+<h2>Extrapolation by fitting the relationship between the estimated phenotype <span class="math notranslate nohighlight">\(\varphi\)</span> and the measured phenotype <span class="math notranslate nohighlight">\(\phi\)</span><a class="headerlink" href="#Extrapolation-by-fitting-the-relationship-between-the-estimated-phenotype-\varphi-and-the-measured-phenotype-\phi" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># variable: indicate which gene allocated for the mutation</span>
+<span class="n">model</span><span class="o">.</span><span class="n">train_convert</span><span class="p">(</span><span class="n">A_id</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">A_id</span><span class="p">],</span> <span class="n">variable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">train_convert</span><span class="p">(</span><span class="n">B_id</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">B_id</span><span class="p">],</span> <span class="n">variable</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">update_emb</span><span class="p">(</span><span class="n">nA_id</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">nA_id</span><span class="p">],</span> <span class="n">variable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">update_emb</span><span class="p">(</span><span class="n">nB_id</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">nB_id</span><span class="p">],</span> <span class="n">variable</span> <span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Check-the-extrapolation-on-the-variables">
+<h2>Check the extrapolation on the variables<a class="headerlink" href="#Check-the-extrapolation-on-the-variables" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">bx</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">A_id</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">A_id</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">nA_id</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">nA_id</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="c1"># polynomial fitting</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">conversion</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">B_id</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">B_id</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">genes</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">nB_id</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">nB_id</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">conversion</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$X$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$Z^1$&quot;</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$Y$&quot;</span><span class="p">)</span>
+<span class="n">bx</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$Z^2$&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">]:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">bx</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_22_0.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_22_0.png" />
+</div>
+</div>
+</section>
+<section id="Compare-the-model-with-and-without-extrapolation">
+<h2>Compare the model with and without extrapolation<a class="headerlink" href="#Compare-the-model-with-and-without-extrapolation" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fit_with_exp</span><span class="p">,</span> <span class="n">var_with_exp</span><span class="p">,</span> <span class="n">lat_with_exp</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">val_data</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">long</span><span class="p">(),</span> <span class="n">detach</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">score_no_exp</span> <span class="o">=</span> <span class="p">((</span><span class="n">fit_no_exp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">score_with_exp</span> <span class="o">=</span> <span class="p">((</span><span class="n">fit_with_exp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+<span class="n">pearson_no_exp</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">fit_no_exp</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">pearson_with_exp</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">fit_with_exp</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">fit_no_exp</span><span class="p">,</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;no exp: $MSE=</span><span class="si">{:.2f}</span><span class="s2">, \rho = </span><span class="si">{:.2}</span><span class="s2">$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score_no_exp</span><span class="p">,</span><span class="n">pearson_no_exp</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">fit_with_exp</span><span class="p">,</span> <span class="n">val_data</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;with exp: $MSE=</span><span class="si">{:.2f}</span><span class="s2">, \rho = </span><span class="si">{:.2}</span><span class="s2">$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score_with_exp</span><span class="p">,</span><span class="n">pearson_with_exp</span><span class="p">))</span>
+
+<span class="c1"># ax.set_xlabel(&quot;$\\hat{F}$&quot;)</span>
+<span class="c1"># ax.set_ylabel(&quot;$F^{obs}$&quot;)</span>
+<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">]:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/build_html_tutorials_tutorial_1_extrapolation_24_0.png" src="../../../_images/build_html_tutorials_tutorial_1_extrapolation_24_0.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Shuhui Wang, Vaitea Oupp.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
