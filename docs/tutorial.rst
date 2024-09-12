@@ -9,8 +9,7 @@ Data similar to the data in our paper can be trained using the following noteboo
     :maxdepth: 1
 
     tutorials/tutorial_0_plot_landscape.ipynb
-    tutorials/tutorial_1_extrapolation.ipynb
-    tutorials/tutorial_2_Integrating_heterogeneous_data.ipynb
+    tutorials/tutorial_1_simualted_data.ipynb
 
 
 You can also find the tutorials on Google Colab: 

@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'D-LIM'
-copyright = '2024, Shuhui Wang, Vaitea Oupp'
-author = 'Shuhui Wang, Vaitea Oupp'
-release = '1.0'
+copyright = '2024, Shuhui Wang, Vaitea Opuu'
+author = 'Shuhui Wang, Vaitea Opuu'
+release = '2.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
