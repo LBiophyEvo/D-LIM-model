@@ -149,7 +149,8 @@ class DLIM_API():
         pred_l = self.model.predictor(data_m)[:, [0]].detach().numpy().reshape(300, 300).T
 
 
-        norm = TwoSlopeNorm(vmin=min(-1e-6, pred_l.min()), vcenter=0, vmax=max(pred_l.max(), 1e-6,))
+        # norm = TwoSlopeNorm(vmin=min(-1e-6, pred_l.min()), vcenter=0, vmax=max(pred_l.max(), 1e-6,))
+        norm = None
         ax.contourf(x_m, y_m, pred_l, cmap="bwr", alpha=0.4, norm=norm)
 
         ax.set_xlabel("$\\varphi_A$", fontsize=fontsize)
