@@ -11,9 +11,18 @@ Data similar to the data in our paper can be trained using the following noteboo
     tutorials/tutorial_1_plot_landscape.ipynb
 
     tutorials/tutorial_2_sim_data.ipynb
-    
-    ../../reproducibility/figure2.ipynb
 
+    reproducibility/figure2.ipynb
+
+    reproducibility/figure3&5.ipynb
+
+    reproducibility/figure4.ipynb
+
+    reproducibility/figure6.ipynb
+
+    reproducibility/figure7.ipynb
+
+    reproducibility/figure8.ipynb
 
 You can also find the tutorials on Google Colab: 
 
