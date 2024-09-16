@@ -55,7 +55,6 @@ class DLIM_API():
             emb_regularization: float = 0.0, 
             similarity_type: str = 'pearson', 
             temperature: float = 0.5, 
-            spectral_force: bool = False, 
             save_path: Optional[str] = None) -> List[float]:
         """
         Train the model on the specified dataset.
@@ -69,14 +68,13 @@ class DLIM_API():
             emb_regularization (float, optional): Regularization factor for embedding layers. Defaults to 0.0.
             similarity_type (str, optional): Similarity measure to use in the spectral initialization. Defaults to 'pearson'.
             temperature (float, optional): Temperature scaling for similarity computation. Defaults to 0.5.
-            spectral_force (bool, optional): Whether to force spectral initialization. Defaults to False.
             save_path (str, optional): Path to save the trained model. If None, the model will not be saved. Defaults to None.
 
         Returns:
             List[float]: A list containing mean batch losses over epochs.
         """
         if self.flag_spectral :
-            self.model.spec_init_emb(data, sim=similarity_type, temp=temperature, force=spectral_force)
+            self.model.spec_init_emb(data, sim=similarity_type, temp=temperature, force=self.flag_spectral)
         optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay)
         loss_f = GaussianNLLLoss()
         losses = []

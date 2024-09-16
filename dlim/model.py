@@ -12,21 +12,17 @@ class DLIM(nn.Module):
     Deep Latent Interaction Model (DLIM) for handling interactions between different variables.
 
     Attributes:
-        genes (nn.ParameterList): A list of parameters representing genes.
-        epi (Block): A neural network block for processing.
-        conversion (list): List of conversion factors for genes.
+        genes_emb (nn.ParameterList): A list of parameters representing genes embeddings.
+        predictor (Block): A neural network block for processing.
+        conversion (list): List of polynomial coefficients for conversion of genes.
+        spectral_init (SpectralInit): An instance for spectral initialization.
 
     Args:
-        n_variables ([int]): The number of states per variable.
-        emb (int, optional): The size of the embedding. Defaults to 1.
-        hid (int, optional): The size of the hidden layer in the `epi` block. Defaults to 128.
-        nb_layer (int, optional): The number of layers in the `epi` block. Defaults to 0.
-
-    Methods:
-        forward(gene, pre_lat=False, detach=False): Defines the forward pass of DLIM.
-        train_convert(genes_emb, pheno, variable): Trains the conversion for a given variable.
-        update_emb(genes_emb, pheno, variable): Updates the embedding for a given variable.
-        plot(ax, data=None): Plots the model predictions.
+        n_variables (list[int]): The number of states per variable.
+        hid_dim (int, optional): The size of the hidden layer in the `predictor` block. Defaults to 128.
+        nb_layer (int, optional): The number of layers in the `predictor` block. Defaults to 0.
+        emb_init (list[torch.Tensor], optional): Initial embeddings for the genes. Defaults to None.
+        gap_thres (list[float], optional): Thresholds for determing if we use spectral initialization. Defaults to [0.01, 0.95].
     """
 
     def __init__(self, n_variables, hid_dim=128, nb_layer=0, emb_init=None, gap_thres: list = [0.01, 0.95]):
@@ -60,14 +56,22 @@ class DLIM(nn.Module):
         "gene = id; pheno = float; variable = variable id"
         self.conversion[variable] = polyfit(pheno, self.genes_emb[variable][genes].detach(), 3)
 
-    def spec_init_emb(self, data: Data_model, sim="pearson", temp=1., force=False):
-        "apply the spectral initialization"
+    def spec_init_emb(self, data: Data_model, sim="pearson", temp=1., force=True):
+        """
+        Apply spectral initialization to embeddings.
+
+        Args:
+            data (Data_model): DataModel instance.
+            sim (str): Similarity measure for spectral initialization.
+            temp (float): Temperature for the similarity measure.
+            force (bool): Whether to force spectral initialization.
+        """
         emb_init = []
         for c, nb in enumerate(self.n_variables):
             cov_mat = self.spectral_init.compute_cor_scores(data, col=c, sim_type=sim, temperatue=temp)
             fiedler_vec, eig_val = self.spectral_init.calculate_fiedler_vector(cov_mat, eig_val=True)
             spec_gap = (eig_val[1]-eig_val[0])
-            if force or (spec_gap < self.gap_thres[1] and spec_gap > self.gap_thres[0]):
+            if force and (spec_gap < self.gap_thres[1] and spec_gap > self.gap_thres[0]):
                 print(f"spectral gap = {spec_gap}")
                 emb_init += [nn.Parameter(fiedler_vec.reshape(-1, 1))]
             else:
