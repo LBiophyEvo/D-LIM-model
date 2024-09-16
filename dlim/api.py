@@ -66,7 +66,8 @@ class DLIM_API():
             nb_epoch (int, optional): Number of epochs to train the model. Defaults to 100.
             batch_size (int, optional): Batch size for training. Defaults to 32.
             emb_regularization (float, optional): Regularization factor for embedding layers. Defaults to 0.0.
-            similarity_type (str, optional): Similarity measure to use in the spectral initialization. Defaults to 'pearson'.
+            similarity_type (str, optional): Similarity measure to use in the spectral initialization. Defaults to 'pearson'. You can choose among
+            ['pearson', 'cosine', 'euclidean']
             temperature (float, optional): Temperature scaling for similarity computation. Defaults to 0.5.
             save_path (str, optional): Path to save the trained model. If None, the model will not be saved. Defaults to None.
 
@@ -151,8 +152,8 @@ class DLIM_API():
         norm = TwoSlopeNorm(vmin=min(-1e-6, pred_l.min()), vcenter=0, vmax=max(pred_l.max(), 1e-6,))
         ax.contourf(x_m, y_m, pred_l, cmap="bwr", alpha=0.4, norm=norm)
 
-        ax.set_xlabel("$\\varphi_1$", fontsize=fontsize)
-        ax.set_ylabel("$\\varphi_2$", fontsize=fontsize)
+        ax.set_xlabel("$\\varphi_A$", fontsize=fontsize)
+        ax.set_ylabel("$\\varphi_B$", fontsize=fontsize)
 
         if data is not None:
             _, _, lat = self.predict(data.data[:, :-1], detach=True)

@@ -95,7 +95,7 @@ def run_one(i, frac):
     model = DLIM(n_variables = train_data.nb_val, hid_dim = hparam['hid'], nb_layer = hparam['nb_layer'])
     dlim_regressor = DLIM_API(model=model, flag_spectral=True)
     _ = dlim_regressor.fit(train_data, lr = hparam['lr'], nb_epoch=hparam['nb_epoch'], \
-                                batch_size=hparam['bsize'], emb_regularization=0)
+                                batch_size=hparam['bsize'], emb_regularization=0, similarity_type='cosine')
 
     fit, var, _  = dlim_regressor.predict(val_data.data[:,:-1], detach=True) 
 
@@ -115,7 +115,9 @@ for frac in val_frac:
     for i in tqdm(range(max_iter)):
         r = run_one(i, frac) 
         tmp_w.append(r)
+        print(r)
     result[frac] = tmp_w
+print(tmp_w)
 path_save = 'results/' + str(config.data_flag) + '_' + str(flag) 
 os.makedirs(path_save, exist_ok=True)
-joblib.dump(result, path_save + '/reg_' + str(model_name) + '.joblib')
+joblib.dump(result, path_save + '/reg_' + str(model_name) + '_cosine.joblib')
