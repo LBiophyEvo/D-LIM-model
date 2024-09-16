@@ -8,8 +8,9 @@ Data similar to the data in our paper can be trained using the following noteboo
 .. toctree::
     :maxdepth: 1
 
-    tutorials/tutorial_0_plot_landscape.ipynb
-    tutorials/tutorial_1_sim_data.ipynb
+    tutorials/tutorial_1_plot_landscape.ipynb
+    tutorials/tutorial_2_sim_data.ipynb
+    ../../reproducibility/figure2.ipynb
 
 
 You can also find the tutorials on Google Colab: 
