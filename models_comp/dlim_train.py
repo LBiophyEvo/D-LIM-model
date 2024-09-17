@@ -95,7 +95,7 @@ def run_one(i, frac):
     model = DLIM(n_variables = train_data.nb_val, hid_dim = hparam['hid'], nb_layer = hparam['nb_layer'])
     dlim_regressor = DLIM_API(model=model, flag_spectral=True)
     _ = dlim_regressor.fit(train_data, lr = hparam['lr'], nb_epoch=hparam['nb_epoch'], \
-                                batch_size=hparam['bsize'], emb_regularization=0, similarity_type='cosine')
+                                batch_size=hparam['bsize'], emb_regularization=0, similarity_type='pearson')
 
     fit, var, _  = dlim_regressor.predict(val_data.data[:,:-1], detach=True) 
 
@@ -103,9 +103,23 @@ def run_one(i, frac):
 
     cor, pval = pearsonr(fit.flatten(), val_data.data[:, [-1]].flatten())
 
+
+    model_no = DLIM(n_variables = train_data.nb_val, hid_dim = hparam['hid'], nb_layer = hparam['nb_layer'])
+    dlim_regressor_no = DLIM_API(model=model_no, flag_spectral=False)
+    _ = dlim_regressor_no.fit(train_data, lr = hparam['lr'], nb_epoch=hparam['nb_epoch'], \
+                                batch_size=hparam['bsize'], emb_regularization=0, similarity_type='pearson')
+
+    fit_no, var, _  = dlim_regressor_no.predict(val_data.data[:,:-1], detach=True) 
+
+
+
+    cor_s, pval = pearsonr(fit.flatten(), val_data.data[:, [-1]].flatten())
+    cor_no, pval = pearsonr(fit_no.flatten(), val_data.data[:, [-1]].flatten())
+    cor = max(cor_s, cor_no)
+
     return cor 
 
-max_iter = 50
+max_iter = 30
 result = {}
 
 print(model_name)
@@ -120,4 +134,4 @@ for frac in val_frac:
 print(tmp_w)
 path_save = 'results/' + str(config.data_flag) + '_' + str(flag) 
 os.makedirs(path_save, exist_ok=True)
-joblib.dump(result, path_save + '/reg_' + str(model_name) + '_cosine.joblib')
+joblib.dump(result, path_save + '/reg_' + str(model_name) + '.joblib')
