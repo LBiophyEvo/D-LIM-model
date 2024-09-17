@@ -122,7 +122,7 @@ plt.show()
 
 * Reproduction of the manuscript
 
-Figures and analyses of the manuscript can be found in ~reproducibility.org~.
+Figures and analyses of the manuscript can be found in File ~reproducibility~.
 
 * License
 
