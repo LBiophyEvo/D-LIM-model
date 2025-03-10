@@ -14,11 +14,11 @@ Data similar to the data in our paper can be trained using the following noteboo
 
     reproducibility/figure2.ipynb
 
-    reproducibility/figure3&5.ipynb
+    reproducibility/figure3&SI3.ipynb
 
-    reproducibility/figure4.ipynb
+    reproducibility/figure4&6.ipynb
 
-    reproducibility/figure6.ipynb
+    reproducibility/figure5.ipynb
 
     reproducibility/figure7.ipynb
 
