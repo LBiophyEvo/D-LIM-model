@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from torch import tensor, rand, cdist, randn, exp as texp
-from numpy.random import normal, uniform
+from numpy.random import normal, uniform, seed
 from numpy import linspace, arange, meshgrid, array, exp, sin, concatenate, cos
 from numpy import pi as npi, power
 from numpy.linalg import det
@@ -46,6 +46,7 @@ class Simulated(Dataset):
         self.cor = cor
         self.alpha = (3.14/180) * alpha
         self.temp = temp
+        seed(42)
         if self.cor in ["exp", "tgaus", "cascade"]:
             self.center = center
         else:

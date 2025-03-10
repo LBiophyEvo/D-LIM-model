@@ -48,6 +48,7 @@ class DLIM_API():
 
     def fit(self, 
             data: Data_model, 
+            test_data: Optional[Data_model] = None,
             lr: float = 1e-3, 
             weight_decay: float = 1e-4, 
             nb_epoch: int = 100, 
@@ -80,6 +81,8 @@ class DLIM_API():
         loss_f = GaussianNLLLoss()
         losses = []
         self.model.train()
+        loss_best_test = np.inf
+        patience = 0 
         for _ in range(nb_epoch):
             loss_b, loss_l = [], []
             loader = DataLoader(data, batch_size=batch_size, shuffle=True)
@@ -96,7 +99,26 @@ class DLIM_API():
                 optimizer.step()
                 loss_b += [loss_mse.item()]
             losses += [mean(loss_b)]
+            if test_data != None:
+                loss_test = []
+                loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+                with torch.no_grad():
+                    self.model.eval()
+                    for bi, batch in enumerate(loader):
+                        pfit, var, lat = self.model(batch[:, :-1].long())
+                        loss_mse = loss_f(pfit, batch[:, [-1]], var)
+                        loss_test.append(loss_mse.item())
+                loss_test_epoch = np.mean(loss_test)
 
+                if loss_best_test > loss_test_epoch:
+                    loss_best_test = loss_test_epoch.copy()
+                    patience = 0 
+                else:
+                    patience += 1 
+            if patience > 10:
+                break 
+                    
+                
         if save_path:
             try:
                 torch.save(self.model, save_path)
@@ -135,7 +157,7 @@ class DLIM_API():
             return fit, variance, lat
 
 
-    def plot(self, ax, data: Optional[Data_model] = None, fontsize: int =12, cols: list = [0, 1]):
+    def plot(self, ax, data: Optional[Data_model] = None, fontsize: int =12, cols: list = [0, 1], xy_labels: Optional[List] = None):
         "only for pairs"
         min_x, max_x = self.model.genes_emb[cols[0]].min().item(), self.model.genes_emb[cols[0]].max().item()
         delta_x = 0.1*(max_x - min_x)
@@ -152,9 +174,12 @@ class DLIM_API():
         # norm = TwoSlopeNorm(vmin=min(-1e-6, pred_l.min()), vcenter=0, vmax=max(pred_l.max(), 1e-6,))
         norm = None
         ax.contourf(x_m, y_m, pred_l, cmap="bwr", alpha=0.4, norm=norm)
-
-        ax.set_xlabel("$\\varphi_A$", fontsize=fontsize)
-        ax.set_ylabel("$\\varphi_B$", fontsize=fontsize)
+        if xy_labels != None:
+            ax.set_xlabel(xy_labels[0], fontsize=fontsize)
+            ax.set_ylabel(xy_labels[1], fontsize=fontsize)
+        else:
+            ax.set_xlabel("$\\varphi_1$", fontsize=fontsize)
+            ax.set_ylabel("$\\varphi_2$", fontsize=fontsize)
 
         if data is not None:
             _, _, lat = self.predict(data.data[:, :-1], detach=True)
