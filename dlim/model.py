@@ -25,7 +25,7 @@ class DLIM(nn.Module):
         gap_thres (list[float], optional): Thresholds for determing if we use spectral initialization. Defaults to [0.01, 0.95].
     """
 
-    def __init__(self, n_variables, hid_dim=128, nb_layer=0, emb_init=None, gap_thres: list = [0.01, 0.95]):
+    def __init__(self, n_variables, hid_dim=128, nb_layer=0, emb_init=None, gap_thres: list = [0.01, 0.95], dropout_ratio = 0.2, batch_norm = False):
         super(DLIM, self).__init__()
 
         self.gap_thres = gap_thres
@@ -37,7 +37,7 @@ class DLIM(nn.Module):
         if emb_init is None:
             for el in self.genes_emb:
                 init.xavier_normal_(el)
-        self.predictor = Block(len(self.genes_emb), 2, hid_dim, nb_layer)
+        self.predictor = Block(len(self.genes_emb), 2, hid_dim, nb_layer, dropout_ratio = dropout_ratio, batch_norm = batch_norm)
         self.conversion = [None for _ in self.genes_emb]
         self.spectral_init = spectral_init()
 

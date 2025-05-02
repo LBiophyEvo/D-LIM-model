@@ -56,7 +56,9 @@ class DLIM_API():
             emb_regularization: float = 0.0, 
             similarity_type: str = 'pearson', 
             temperature: float = 0.5, 
-            save_path: Optional[str] = None) -> List[float]:
+            max_patience: int = 10, 
+            save_path: Optional[str] = None,
+            return_best_model: bool = False) -> List[float]:
         """
         Train the model on the specified dataset.
 
@@ -78,7 +80,11 @@ class DLIM_API():
         if self.flag_spectral :
             self.model.spec_init_emb(data, sim=similarity_type, temp=temperature, force=self.flag_spectral)
         optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+        scheduler_step = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=10
+        )
         loss_f = GaussianNLLLoss()
+        loss_mse_f = torch.nn.MSELoss()
         losses = []
         self.model.train()
         loss_best_test = np.inf
@@ -89,16 +95,17 @@ class DLIM_API():
             for bi, batch in enumerate(loader):
                 optimizer.zero_grad()
                 pfit, var, lat = self.model(batch[:, :-1].long())
-                loss_mse = loss_f(pfit, batch[:, [-1]], var)
+                loss_gaussian = loss_f(pfit, batch[:, [-1]], var)
+                loss_mse = loss_mse_f(pfit, batch[:, [-1]])
                 if emb_regularization > 0:
                     loss_dist = (sum(torch.norm(el, p=2) for el in self.model.genes_emb)/len(self.model.genes_emb))**2
-                    loss = loss_mse + emb_regularization * loss_dist
+                    loss = loss_gaussian + emb_regularization * loss_dist
                 else:
-                    loss = loss_mse + emb_regularization
+                    loss = loss_gaussian + emb_regularization
+                
                 loss.backward()
                 optimizer.step()
                 loss_b += [loss_mse.item()]
-            losses += [mean(loss_b)]
             if test_data != None:
                 loss_test = []
                 loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
@@ -106,27 +113,38 @@ class DLIM_API():
                     self.model.eval()
                     for bi, batch in enumerate(loader):
                         pfit, var, lat = self.model(batch[:, :-1].long())
-                        loss_mse = loss_f(pfit, batch[:, [-1]], var)
+                        loss_mse = loss_mse_f(pfit, batch[:, [-1]])
                         loss_test.append(loss_mse.item())
                 loss_test_epoch = np.mean(loss_test)
+                losses += [(mean(loss_b), loss_test_epoch)]
 
                 if loss_best_test > loss_test_epoch:
                     loss_best_test = loss_test_epoch.copy()
+                    best_model = self.model 
                     patience = 0 
                 else:
                     patience += 1 
-            if patience > 10:
-                break 
+            else:
+                best_model = self.model 
+                loss_best_test = None 
+                losses += [mean(loss_b)]
+
+            if patience > max_patience:
+                scheduler_step.step()
+                # break 
+            
                     
-                
+        self.model = best_model      
         if save_path:
             try:
-                torch.save(self.model, save_path)
+                torch.save(best_model, save_path)
                 print(f"Model saved to {save_path}")
             except Exception as e:
                 print(f"Failed to save model: {e}")
-
-        return losses
+        if return_best_model:
+            return losses, best_model, loss_best_test
+        else:
+            return losses
 
     
     def predict(self, data: torch.Tensor, detach:  bool = True):

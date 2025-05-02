@@ -19,12 +19,22 @@ class Block(nn.Module):
         forward(x): Defines the forward pass of the block.
     """
 
-    def __init__(self, in_d, out_d, hid_d, nb_layer=0):
+    def __init__(self, in_d, out_d, hid_d, nb_layer=0, dropout_ratio = 0.2, batch_norm = False):
         super(Block, self).__init__()
+        self.dropout = nn.Dropout(dropout_ratio)
+        # self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.BatchNorm1d(hid_d), nn.ReLU(), self.dropout])
+        if batch_norm:
+            self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.ReLU(), self.dropout])
+        else:
+            self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.BatchNorm1d(hid_d), nn.ReLU(), self.dropout])
 
-        self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.ReLU()])
+
         for _ in range(nb_layer):
-            self.pred += [nn.Linear(hid_d, hid_d), nn.ReLU()]
+            if batch_norm:
+                self.pred += [nn.Linear(hid_d, hid_d), nn.BatchNorm1d(hid_d), nn.ReLU(), self.dropout]
+            else:
+                self.pred += [nn.Linear(hid_d, hid_d), nn.ReLU(), self.dropout]
+
         self.pred += [nn.Linear(hid_d, out_d)]
 
         for el in self.pred:
