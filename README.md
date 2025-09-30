@@ -1,4 +1,4 @@
-# TITLE: D-LIM (Direct-Latent Interpretable Model)
+# D-LIM (Direct-Latent Interpretable Model)
 
 # Overview
 
@@ -41,7 +41,7 @@ pip install .
    
 # Manuscript reproduction
   Source code to reproduce the analysis of the LANTERN manuscript are
-  available at [[https://github.com/LBiophyEvo/D-LIM-model/tree/main/reproducibility][https://github.com/LBiophyEvo/D-LIM-model/tree/main/reproducibility]].
+  available at [Reproducibility for figures](https://github.com/LBiophyEvo/D-LIM-model.git).
   
 # License
   This project is covered under the *MIT License*
