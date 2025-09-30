@@ -14,7 +14,7 @@ low-data biological research.
 # System Requirements
 
 ## Hardware requirements
-   ~D-LIM~ requires only a standard computer with enough RAM to
+   **D-LIM** requires only a standard computer with enough RAM to
    support the in-memory operations. 
 
 ## Software requirements
@@ -22,7 +22,7 @@ low-data biological research.
    - Linux: Ubuntu 20.04
 
 ## Python Dependencies
-   ~D-LIM~ depends primarily on ~pytorch~, as well as
+   **D-LIM** depends primarily on **pytorch**, as well as
    the components of the Python scientific stack:
    - ~pandas~
    - ~numpy~
@@ -40,7 +40,7 @@ pip install .
 
    
 # Manuscript reproduction
-  Source code to reproduce the analysis of the LANTERN manuscript are
+  Source code to reproduce the analysis of the **D-LIM** manuscript are
   available at [Reproducibility for figures](https://github.com/LBiophyEvo/D-LIM-model.git).
   
 # License
