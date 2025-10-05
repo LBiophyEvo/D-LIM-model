@@ -76,7 +76,7 @@ class Simulated(Dataset):
         self.cor = cor
         cor_types= ['exp', 'tgaus', 'cascade', 'bio', 'add', 'quad', 'comp', 'saddle', 'hat']
         # check if the selected landscape is in the avaible options 
-        assert not (self.cor in cor_types), f"cor should be among {cor_types}"
+        assert (self.cor in cor_types), f"cor should be among {cor_types}"
 
         self.alpha = (3.14/180) * alpha
         self.temp = temp
@@ -106,7 +106,8 @@ class Simulated(Dataset):
     def sim(self, A, B):
         """
         Simulates the landscape based on the selected lanscape name.
-        Returns meshgrid and simulated landscape.
+        Returns meshgrid and simulated landscape. Details about the landscape can be found in 
+        readme.md 
         """
         p1, p2 = meshgrid(A, B)
         if self.cor == "bio":

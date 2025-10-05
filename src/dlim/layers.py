@@ -22,7 +22,6 @@ class Block(nn.Module):
     def __init__(self, in_d, out_d, hid_d, nb_layer=0, dropout_ratio = 0.2, batch_norm = False):
         super(Block, self).__init__()
         self.dropout = nn.Dropout(dropout_ratio)
-        # self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.BatchNorm1d(hid_d), nn.ReLU(), self.dropout])
         if batch_norm:
             self.pred = nn.ModuleList([nn.Linear(in_d, hid_d), nn.ReLU(), self.dropout])
         else:

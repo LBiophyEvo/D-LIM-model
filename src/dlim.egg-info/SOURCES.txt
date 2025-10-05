@@ -1,0 +1,14 @@
+LICENSE.txt
+README.md
+setup.py
+src/dlim/__init__.py
+src/dlim/api.py
+src/dlim/dataset.py
+src/dlim/layers.py
+src/dlim/model.py
+src/dlim/utils.py
+src/dlim.egg-info/PKG-INFO
+src/dlim.egg-info/SOURCES.txt
+src/dlim.egg-info/dependency_links.txt
+src/dlim.egg-info/requires.txt
+src/dlim.egg-info/top_level.txt

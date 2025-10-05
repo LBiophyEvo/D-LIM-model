@@ -1,3 +1,27 @@
+Metadata-Version: 2.4
+Name: dlim
+Version: 0.1.0
+Summary: Direct Latent Interpretable Model (D-LIM): An interpretable neural network for mapping genotype to fitness.
+Author: Shuhui Wang, Alexandre Allauzen, Philippe Nghe, Vaitea Opuu
+Author-email: vaiteaopuu@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: torch>=1.10.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # D-LIM (Direct-Latent Interpretable Model)
 
 # Overview
@@ -24,8 +48,8 @@ low-data biological research.
 ## Python Dependencies
    **D-LIM** depends primarily on **pytorch**, as well as
    the components of the Python scientific stack:
-   - `pandas`
-   - `numpy`
+   - ~pandas~
+   - ~numpy~
 
 ## Installation guide
 - Install the package from Pypi:
@@ -35,9 +59,7 @@ pip install dlim
 
 Or install it from the sources:
 ```
-git clone https://github.com/LBiophyEvo/D-LIM-model.git
-cd D-LIM-model 
-pip install -e .
+pip install .
 ```
 
    
