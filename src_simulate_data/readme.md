@@ -8,9 +8,9 @@ The `cor` argument in the `Simulated` class specifies the type of landscape to s
 
 - **"exp"**:  
   Generates a 2D exponential landscape centered at a specified point. Useful for smooth, unimodal fitness landscapes.
-  $$
-  F(X,Y) = exp(-\frac{((X_0 - X)^2 + (Y_0 - Y)**2)}{t}),
-  $$
+
+  $F(X,Y) = exp(-\frac{((X_0 - X)^2 + (Y_0 - Y)**2)}{t}),$
+
   where $X_0$ and $Y_0$ are the center of the exponential landscape. $t$ is a constant variable. 
 
 
@@ -26,46 +26,38 @@ The `cor` argument in the `Simulated` class specifies the type of landscape to s
 
 - **"bio"**:  
   Implements a mechanistic biological model (Kemble et al. 2020) for realistic genotype-phenotype relationships.
- $$ 
- F(X,Y) = \left ( w + \mu \varphi - \frac{\nu }{1/\eta - \varphi } \right )\left ( 1- \theta_X X - \theta_Y Y\right ),
- $$
+
+ $F(X,Y) = \left ( w + \mu \varphi - \frac{\nu }{1/\eta - \varphi } \right )\left ( 1- \theta_X X - \theta_Y Y\right ),$
+
 where $\varphi = \frac{1}{1/X + 1/Y + \eta }$ denotes for flux, $\eta$ is the
-inverse of the maximal flux $\varphi$, $\theta_X $ and $\theta_Y $ represent the
+inverse of the maximal flux $\varphi$, $\theta_X$ and $\theta_Y$ represent the
 cost of increasing cellular enzyme activity, $w$ describes the growth rate,
 $\mu$ and $\nu$ are two variables related to downstream enzyme properties.
 
 - **"add"**:  
   Simple additive landscape: fitness is the sum of two variables.
 
-  $$ 
-  F(X,Y) = X + Y.
-  $$
+  $F(X,Y) = X + Y.$
 
 - **"quad"**:  
   Quadratic landscape: fitness is the product of two variables.
 
-  $$ F(X,Y) = X \times Y.
-  $$
+  $F(X,Y) = X \times Y.$
 
 
 - **"comp"**:  
   Composite landscape: combines additive and multiplicative effects.
-  $$ 
-  F(X,Y) = X + Y - X \times Y.
-  $$
+
+  $F(X,Y) = X + Y - X \times Y.$
 
 
 - **"saddle"**:  
   Saddle-shaped landscape: difference of squares, useful for simulating antagonistic effects.
-  $$
-  F(X,Y) = X^2 - Y^2.
-  $$
+  $F(X,Y) = X^2 - Y^2.$
 
 - **"hat"**:  
   Hat-shaped landscape: uses a sine function for periodic or oscillatory fitness effects.
-  $$
-  F(X,Y) = sin(X^2 + Y^2).
-  $$
+  $F(X,Y) = sin(X^2 + Y^2).$
 
 ## Usage Example
 
