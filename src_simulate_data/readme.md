@@ -25,7 +25,7 @@ The `cor` argument in the `Simulated` class specifies the type of landscape to s
 
 
 - **bio**:  
-  Implements a mechanistic biological model (Kemble et al. 2020) for realistic genotype-phenotype relationships.
+  Implements a mechanistic biological model ([Kemble et al.](https://www.science.org/doi/10.1126/sciadv.abb2236) ) for realistic genotype-phenotype relationships.
   
   $F(X,Y) = \left ( w + \mu \varphi - \frac{\nu }{1/\eta - \varphi } \right )\left ( 1- \theta_X X - \theta_Y Y\right ),$
   

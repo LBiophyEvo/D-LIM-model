@@ -48,8 +48,8 @@ low-data biological research.
 ## Python Dependencies
    **D-LIM** depends primarily on **pytorch**, as well as
    the components of the Python scientific stack:
-   - ~pandas~
-   - ~numpy~
+   - `pandas`
+   - `numpy`
 
 ## Installation guide
 - Install the package from Pypi:
@@ -59,7 +59,9 @@ pip install dlim
 
 Or install it from the sources:
 ```
-pip install .
+git clone https://github.com/LBiophyEvo/D-LIM-model.git
+cd D-LIM-model 
+pip install -e .
 ```
 
    

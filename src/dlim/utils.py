@@ -8,14 +8,34 @@ from dlim.dataset import Data_model
 
 
 class spectral_init():
+    """
+    Utility class for spectral initialization of gene embeddings.
+
+    This class provides methods to compute similarity/correlation matrices
+    and extract the Fiedler vector for initialization.
+
+    Methods:
+        compute_cor_scores(data, col, sim_type='pearson', temperatue=1.0):
+            Computes the correlation or similarity matrix for a given variable.
+        calculate_fiedler_vector(cov_mat, eig_val=False):
+            Calculates the Fiedler vector (second smallest eigenvector) of the matrix.
+    """
+
     def __init__(self):
         pass
 
     def calculate_fiedler_vector(self, A, eig_val=False):
-        """Compute the spectral initialization.
-        - A is the adjacency matrix
         """
+        Calculate the Fiedler vector (second smallest eigenvector) of the matrix.
 
+        Args:
+            cov_mat (np.ndarray): Correlation/similarity matrix.
+            eig_val (bool, optional): If True, also return eigenvalues.
+
+        Returns:
+            np.ndarray: Fiedler vector.
+            np.ndarray (optional): Eigenvalues.
+        """
         if not isinstance(A, torch.Tensor):
             A = torch.Tensor(A)
         if A.min() <= 0.:
@@ -26,8 +46,9 @@ class spectral_init():
         L = D - A
         D_is = torch.diag(1.0 / (D_v**0.5))
         L = D_is @ L @ D_is
-
+        # Compute eigenvalues and eigenvectors
         eigenvalues, eigenvectors = torch.linalg.eigh(L)
+        # Fiedler vector is the second smallest eigenvector
         fiedler_vector = eigenvectors[:, 1]
         fiedler_vector = (fiedler_vector - fiedler_vector.mean())/fiedler_vector.std()
         if eig_val:
@@ -37,7 +58,18 @@ class spectral_init():
 
 
     def compute_cor_scores(self, data: Data_model, col: int , sim_type: str = 'pearson', temperatue: float = 1.0):
-        
+        """
+        Compute the correlation or similarity matrix for a given variable.
+
+        Args:
+            data (Data_model): Dataset containing genotype-phenotype data.
+            col (int): Column index for the variable.
+            sim_type (str, optional): Similarity type ('pearson', 'spearman', etc.). Defaults to 'pearson'.
+            temperatue (float, optional): Temperature scaling for similarity. Defaults to 1.0.
+
+        Returns:
+            np.ndarray: Correlation/similarity matrix.
+        """
         all_var = data.substitutions_tokens[col]
         nb_var = len(data.substitutions_tokens[col])
         train_data = data.data
@@ -57,7 +89,7 @@ class spectral_init():
                     matches = (di_sub[:, None] == dj_sub).all(axis=2)
                     # Get the indices of matches
                     a1_idx, a2_idx = np.where(matches)
-
+                    # Compute the similarity 
                     if a1_idx.shape[0] > 2:
                         if sim_type == "pearson":
                             cov_mat[i, j] = pearsonr(di[a1_idx, -1], dj[a2_idx, -1])[0]
@@ -70,5 +102,6 @@ class spectral_init():
                             raise ValueError("Incorrect similarity type proposed")
                     else:
                         cov_mat[i, j] = 0.
+                    # Keep symmetry
                     cov_mat[j, i] = cov_mat[i, j]
         return  cov_mat
