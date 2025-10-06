@@ -9,6 +9,7 @@ commandline: ::
 Alternatively, you can clone D-LIM from 
 `GitHub <https://github.com/LBiophyEvo/D-LIM-model>`_ by doing 
 the command line: ::
-    git clone https://github.com/LBiophyEvo/D-LIM-model
-    pip install .
+    git clone https://github.com/LBiophyEvo/D-LIM-model.git
+    cd D-LIM-model 
+    pip install -e .
  
