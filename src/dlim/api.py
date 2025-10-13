@@ -49,7 +49,7 @@ class DLIM_API():
         # Load model if load_model path is provided
         if load_model is not None:
             try:
-                self.model = torch.load(load_model)
+                self.model = torch.load(load_model, weights_only=False)
             except Exception as e:
                 raise RuntimeError(f"Failed to load model from {load_model}. Error: {e}")
         else:
