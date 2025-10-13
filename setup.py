@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="dlim",
-    version="0.1.0",
+    version="1.1.0",
     description="Direct Latent Interpretable Model (D-LIM): An interpretable neural network for mapping genotype to fitness.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
