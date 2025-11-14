@@ -97,9 +97,9 @@ elif config.data_flag == 'elife':
         'sep': '@'
     }
     if flag == 'subtle':
-        data_path = "../data/elife/elife_data_subtle_env.csv"
+        data_path = "../../data/elife/elife_data_subtle_env.csv"
     else:
-        data_path = "../data/elife/elife_data_strong_env.csv"
+        data_path = "../../data/elife/elife_data_strong_env.csv"
 
 elif config.data_flag == 'protein_inter':
     hparam = {
@@ -124,7 +124,7 @@ seed(42)  # Ensure reproducibility
 data = Data_model(data_path, 2, sep=hparam['sep'])
 
 # Define validation split fraction
-val_frac = logspace(-1, 0.1, num=7)  # Varying fractions of training data (10% to ~1.26×)
+val_frac = [1.0] #logspace(-1, 0.1, num=7)  # Varying fractions of training data (10% to ~1.26×)
 
 # Split into train and validation sets
 val_id = choice(range(data.data.shape[0]), int(data.data.shape[0] * 0.3))

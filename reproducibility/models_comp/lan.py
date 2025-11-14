@@ -152,9 +152,9 @@ if __name__ == '__main__':
     elif config.data_flag == 'elife':
         sep = '@'
         if flag == 'subtle':
-            data_path = "../data/elife/elife_data_subtle_env.csv"
+            data_path = "../../data/elife/elife_data_subtle_env.csv"
         else:
-            data_path = "../data/elife/elife_data_strong_env.csv"
+            data_path = "../../data/elife/elife_data_strong_env.csv"
 
     elif config.data_flag == 'protein_inter':
         sep = ','
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # ----- Read and Prepare Data -----
     df = read_data(file=data_path, sep=sep)
     seed(42)
-    val_frac = logspace(-1, 0.1, num=7)  # Training fractions from 0.1x to ~1.25x
+    val_frac = [1.0] #logspace(-1, 0.1, num=7)  # Varying fractions of training data (10% to ~1.26×)
     val_id = choice(range(df.shape[0]), int(df.shape[0] * 0.3), replace=False)
     train_full_id = [i for i in range(df.shape[0]) if i not in val_id]
 

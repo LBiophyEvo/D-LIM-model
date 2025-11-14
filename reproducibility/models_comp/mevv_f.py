@@ -61,9 +61,9 @@ if config.data_flag == 'harry':
 
 elif config.data_flag == 'elife':
     if flag == 'subtle':
-        data_path = "../data/elife/elife_data_subtle_env.csv"
+        data_path = "../../data/elife/elife_data_subtle_env.csv"
     else:
-        data_path = "../data/elife/elife_data_strong_env.csv"
+        data_path = "../../data/elife/elife_data_strong_env.csv"
     sep = '@'
 
 elif config.data_flag == 'protein_inter':
@@ -89,7 +89,7 @@ alphabet = ["A", "C", "G", "U", "T", "N"]
 seed(42)
 
 # ===== Split Data =====
-val_frac = logspace(-1, 0.1, num=7)  # fractions of training data to test
+val_frac = [1.0] #logspace(-1, 0.1, num=7)  # Varying fractions of training data (10% to ~1.26×)
 val_id = choice(range(data.data.shape[0]), int(data.data.shape[0] * 0.3), replace=False)
 train_full_id = [i for i in range(data.data.shape[0]) if i not in val_id]
 

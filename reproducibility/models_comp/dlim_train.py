@@ -86,9 +86,9 @@ elif config.data_flag == 'elife':
         'sep': '@'
     }
     if flag == 'subtle':
-        data_path = "../data/elife/elife_data_subtle_env.csv"
+        data_path = "../../data/elife/elife_data_subtle_env.csv"
     else:
-        data_path = "../data/elife/elife_data_strong_env.csv"
+        data_path = "../../data/elife/elife_data_strong_env.csv"
 
 elif config.data_flag == 'protein_inter':
     hparam = {
@@ -120,7 +120,7 @@ val_data = data.subset(val_id)
 num_train_full_data = len(train_full_id)
 
 # Define fractions of data to test training size effects
-val_frac = np.logspace(-1, 0.1, num=7)  # From 10% to ~125%
+val_frac = [1.0] #logspace(-1, 0.1, num=7)  # Varying fractions of training data (10% to ~1.26×)
 
 
 # ===== Training Function =====
